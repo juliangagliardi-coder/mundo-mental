@@ -2,6 +2,19 @@
 
 Un experimento para construir un **palacio mental modular** cuyos Aspectos puedan recordar, investigar, construir, relacionarse y recuperarse sin perder su identidad.
 
+## Abrir la Ciudad
+
+```bash
+python mundo.py
+```
+
+La Ciudad Mental es un visor gráfico local: muestra los Aspectos, edificios, rutas declaradas y actividad reciente. Puede usarse junto a la demostración de ciclo integrado:
+
+```bash
+python iniciar.py
+python -m unittest discover -s tests -v
+```
+
 ## Arquitectura actual
 
 - **Biblioteca 0.2:** memoria episódica, semántica, procedimental y urbanística.
@@ -10,28 +23,10 @@ Un experimento para construir un **palacio mental modular** cuyos Aspectos pueda
 - **Curiosidad 0.2:** detecta vacíos, formula preguntas y ejecuta experimentos aislados bajo supervisión.
 - **Evidencia validada 0.1:** un validador independiente solo promueve resultados reproducibles y corroborados a Biblioteca.
 - **Observación 0.2:** Guardián y Centinela detectan incidencias, aíslan zonas y solo las reanudan mediante señales verificables.
+- **Ciudad Mental 0.1:** visor gráfico de la ciudad estable, sus habitantes y su actividad.
 - **Viabilidad 0.1:** línea base reproducible de rendimiento; mide sin optimizar.
 
-Consulta [BIBLIOTECA.md](BIBLIOTECA.md), [CURIOSIDAD.md](CURIOSIDAD.md), [EVIDENCIA.md](EVIDENCIA.md), [OBSERVACION.md](OBSERVACION.md), [IDENTIDAD.md](IDENTIDAD.md), [VIABILIDAD.md](VIABILIDAD.md), [CONSTITUCION.md](CONSTITUCION.md) y [DECISIONES.md](DECISIONES.md).
-
-## Probarlo
-
-Solo necesita Python 3.10 o posterior; no requiere librerías externas.
-
-```bash
-python iniciar.py
-python -m unittest discover -s tests -v
-```
-
-La demostración crea `.mente/` con memoria local. Esa historia no se sube a GitHub.
-
-## Medir viabilidad
-
-```bash
-python benchmarks/viabilidad_01.py --sizes 100 1000 --output viabilidad.json
-```
-
-Para una exploración deliberadamente exigente pueden añadirse tamaños mayores. Los resultados dependen de la máquina y no representan inteligencia ni velocidad humana; comparan versiones del mismo Palacio bajo la misma carga.
+Consulta [CIUDAD.md](CIUDAD.md), [BIBLIOTECA.md](BIBLIOTECA.md), [CURIOSIDAD.md](CURIOSIDAD.md), [EVIDENCIA.md](EVIDENCIA.md), [OBSERVACION.md](OBSERVACION.md), [IDENTIDAD.md](IDENTIDAD.md), [VIABILIDAD.md](VIABILIDAD.md), [CONSTITUCION.md](CONSTITUCION.md) y [DECISIONES.md](DECISIONES.md).
 
 ## Pacto de evolución
 
@@ -39,4 +34,4 @@ Medir, perfilar y detectar problemas está permitido. Antes de implementar cualq
 
 ## Estado honesto
 
-Biblioteca, Corazón, Calles, Casa de Patrones, Curiosidad, Observación y el validador de evidencia tienen prototipos ejecutables. Viabilidad 0.1 establece primero una línea base; sus mediciones servirán para proponer cambios concretos, no para introducirlos sin consulta.
+Biblioteca, Corazón, Calles, Casa de Patrones, Curiosidad, Observación, validador de evidencia y Ciudad Mental tienen prototipos ejecutables. Los Universos de Experimentación siguen siendo la próxima ampliación: separados de la Ciudad y sujetos a autorización de Curiosidad.
