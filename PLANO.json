@@ -1,0 +1,51 @@
+{
+  "version": "0.1.0",
+  "nombre": "Palacio Mental",
+  "aspectos": [
+    {
+      "id": "biblioteca",
+      "responsabilidad": "Recordar experiencias, habilidades, planos y obras",
+      "estado": "activo"
+    },
+    {
+      "id": "corazon",
+      "responsabilidad": "Diagnosticar, proponer, inspeccionar y consolidar ampliaciones",
+      "estado": "activo"
+    },
+    {
+      "id": "calles",
+      "responsabilidad": "Transportar mensajes tipados entre las partes de la ciudad",
+      "estado": "activo"
+    }
+  ],
+  "barrios": [
+    {
+      "id": "patrones",
+      "aspecto": "aprendizaje",
+      "casas": ["casa_patrones"]
+    }
+  ],
+  "casas": [
+    {
+      "id": "casa_patrones",
+      "tipo": "clasificador_por_ejemplos",
+      "entradas": ["secuencia_discreta"],
+      "salidas": ["concepto", "confianza"],
+      "estado": "experimental"
+    }
+  ],
+  "calles": [
+    {
+      "id": "entrada_a_patrones",
+      "origen": "entrada",
+      "destino": "casa_patrones",
+      "mensaje": "secuencia_discreta"
+    },
+    {
+      "id": "patrones_a_biblioteca",
+      "origen": "casa_patrones",
+      "destino": "biblioteca",
+      "mensaje": "experiencia"
+    }
+  ]
+}
