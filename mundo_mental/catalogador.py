@@ -1,4 +1,4 @@
-"""Catalogador 0.1: índices mecánicos reconstruibles para la Biblioteca."""
+"""Catalogador 0.2: mapas mecánicos, incrementales y reconstruibles."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ import sqlite3
 from collections import Counter
 from datetime import datetime
 from typing import Any, Iterable
+
+from .contratos_biblioteca import LocalizacionCatalogo
 
 
 def _canon(valor: Any) -> str:
@@ -22,15 +24,19 @@ def _fecha(momento: str) -> str:
 
 
 class Catalogador:
-    """Auxiliar determinista sin identidad ni autoridad semántica."""
+    """Órgano determinista: localiza, pero no interpreta ni decide qué significa."""
 
-    VERSION = "0.1.0"
+    VERSION = "0.2.0"
 
     def __init__(self, max_episodios_libro: int = 256):
         self.max_episodios_libro = max(1, int(max_episodios_libro))
 
     def crear_esquema(self, conexion: sqlite3.Connection) -> None:
         conexion.executescript("""
+            CREATE TABLE IF NOT EXISTS catalogo_meta (
+                clave TEXT PRIMARY KEY,
+                valor TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS catalogo_libros (
                 id TEXT PRIMARY KEY,
                 fecha TEXT NOT NULL,
@@ -66,11 +72,18 @@ class Catalogador:
             CREATE INDEX IF NOT EXISTS idx_catalogo_indice_termino
                 ON catalogo_indice(termino, peso DESC);
         """)
+        conexion.execute(
+            "INSERT INTO catalogo_meta(clave, valor) VALUES ('version', ?) "
+            "ON CONFLICT(clave) DO UPDATE SET valor=excluded.valor",
+            (self.VERSION,),
+        )
 
     @staticmethod
     def _terminos(episodio: dict[str, Any]) -> dict[str, float]:
         entrada = episodio.get("entrada", [])
         metadata = episodio.get("metadata", {}) or {}
+        if isinstance(metadata, str):
+            metadata = json.loads(metadata)
         terminos: dict[str, float] = {f"longitud:{len(entrada)}": 0.25}
         for posicion, valor in enumerate(entrada):
             terminos[f"posicion:{posicion}:{_canon(valor)}"] = 1.0
@@ -87,6 +100,19 @@ class Catalogador:
             terminos[f"tema:{_canon(tema)}"] = 0.4
         return terminos
 
+    @staticmethod
+    def _manifiesto_vacio(libro_id: str) -> dict[str, Any]:
+        return {
+            "version": 2,
+            "libro": libro_id,
+            "cantidad": 0,
+            "primer_momento": None,
+            "ultimo_momento": None,
+            "temas": {},
+            "origenes": {},
+            "importancia": {"minima": 0.0, "maxima": 0.0},
+        }
+
     def _libro_abierto(self, conexion: sqlite3.Connection, fecha: str) -> sqlite3.Row | None:
         return conexion.execute(
             "SELECT * FROM catalogo_libros WHERE fecha=? AND estado='abierto' "
@@ -98,14 +124,17 @@ class Catalogador:
             "SELECT COALESCE(MAX(secuencia), 0) + 1 FROM catalogo_libros WHERE fecha=?", (fecha,)
         ).fetchone()[0]
         identidad = f"{fecha}-{secuencia:06d}"
+        manifiesto = self._manifiesto_vacio(identidad)
+        texto = _canon(manifiesto)
         conexion.execute(
-            "INSERT INTO catalogo_libros(id, fecha, secuencia, estado) VALUES (?, ?, ?, 'abierto')",
-            (identidad, fecha, secuencia),
+            "INSERT INTO catalogo_libros(id, fecha, secuencia, estado, manifiesto, huella) "
+            "VALUES (?, ?, ?, 'abierto', ?, ?)",
+            (identidad, fecha, secuencia, texto, hashlib.sha256(texto.encode("utf-8")).hexdigest()),
         )
         return conexion.execute("SELECT * FROM catalogo_libros WHERE id=?", (identidad,)).fetchone()
 
     def catalogar(self, conexion: sqlite3.Connection, episodio: dict[str, Any]) -> str:
-        """Ubica un episodio canónico y actualiza mapas; no interpreta su significado."""
+        """Ubica un episodio canónico y actualiza mapas sin releer el Libro entero."""
         existente = conexion.execute(
             "SELECT libro_id FROM catalogo_ubicaciones WHERE episodio_id=?", (episodio["id"],)
         ).fetchone()
@@ -127,60 +156,62 @@ class Catalogador:
             "INSERT OR REPLACE INTO catalogo_indice VALUES (?, ?, ?, ?)",
             [(termino, episodio["id"], libro["id"], peso) for termino, peso in terminos.items()],
         )
-        self._actualizar_manifiesto(conexion, libro["id"])
+        self._actualizar_manifiesto_incremental(conexion, libro["id"], episodio)
         actualizado = conexion.execute("SELECT * FROM catalogo_libros WHERE id=?", (libro["id"],)).fetchone()
         if actualizado["cantidad"] >= self.max_episodios_libro:
             self._sellar(conexion, libro["id"])
         return libro["id"]
 
-    def _actualizar_manifiesto(self, conexion: sqlite3.Connection, libro_id: str) -> None:
-        filas = conexion.execute(
-            "SELECT e.* FROM episodios e JOIN catalogo_ubicaciones u ON u.episodio_id=e.id "
-            "WHERE u.libro_id=? ORDER BY u.posicion", (libro_id,),
-        ).fetchall()
-        episodios = [dict(fila) for fila in filas]
-        temas: Counter[str] = Counter()
-        origenes: Counter[str] = Counter()
-        for episodio in episodios:
-            temas[str(episodio.get("esperado", "sin-tema"))] += 1
-            metadata = json.loads(episodio.get("metadata") or "{}")
-            origen = metadata.get("origen") or metadata.get("aspecto")
-            if origen:
-                origenes[str(origen)] += 1
-            extras = metadata.get("temas", [])
-            if isinstance(extras, str):
-                extras = [extras]
-            temas.update(str(x) for x in extras)
-        importancias = [float(x["importancia"]) for x in episodios]
-        momentos = [str(x["momento"]) for x in episodios]
-        manifiesto = {
-            "version": 1,
-            "libro": libro_id,
-            "cantidad": len(episodios),
-            "primer_momento": min(momentos) if momentos else None,
-            "ultimo_momento": max(momentos) if momentos else None,
+    def _actualizar_manifiesto_incremental(
+        self, conexion: sqlite3.Connection, libro_id: str, episodio: dict[str, Any]
+    ) -> None:
+        fila = conexion.execute(
+            "SELECT manifiesto FROM catalogo_libros WHERE id=?", (libro_id,)
+        ).fetchone()
+        manifiesto = json.loads(fila["manifiesto"]) if fila and fila["manifiesto"] else self._manifiesto_vacio(libro_id)
+        cantidad_anterior = int(manifiesto.get("cantidad", 0))
+        momento = str(episodio["momento"])
+        importancia = float(episodio.get("importancia", 0.0))
+        temas = Counter(manifiesto.get("temas", {}))
+        origenes = Counter(manifiesto.get("origenes", {}))
+        temas[str(episodio.get("esperado", "sin-tema"))] += 1
+        metadata = episodio.get("metadata", {}) or {}
+        if isinstance(metadata, str):
+            metadata = json.loads(metadata)
+        origen = metadata.get("origen") or metadata.get("aspecto")
+        if origen:
+            origenes[str(origen)] += 1
+        extras = metadata.get("temas", [])
+        if isinstance(extras, str):
+            extras = [extras]
+        temas.update(str(x) for x in extras)
+        rango = manifiesto.get("importancia", {})
+        manifiesto.update({
+            "version": 2,
+            "cantidad": cantidad_anterior + 1,
+            "primer_momento": min(filter(None, [manifiesto.get("primer_momento"), momento])),
+            "ultimo_momento": max(filter(None, [manifiesto.get("ultimo_momento"), momento])),
             "temas": dict(temas.most_common(32)),
             "origenes": dict(origenes.most_common(16)),
             "importancia": {
-                "minima": min(importancias) if importancias else 0.0,
-                "maxima": max(importancias) if importancias else 0.0,
+                "minima": importancia if cantidad_anterior == 0 else min(float(rango.get("minima", importancia)), importancia),
+                "maxima": importancia if cantidad_anterior == 0 else max(float(rango.get("maxima", importancia)), importancia),
             },
-        }
+        })
         texto = _canon(manifiesto)
         huella = hashlib.sha256(texto.encode("utf-8")).hexdigest()
         conexion.execute(
             "UPDATE catalogo_libros SET cantidad=?, primer_momento=?, ultimo_momento=?, "
             "manifiesto=?, huella=? WHERE id=?",
-            (len(episodios), manifiesto["primer_momento"], manifiesto["ultimo_momento"],
+            (manifiesto["cantidad"], manifiesto["primer_momento"], manifiesto["ultimo_momento"],
              texto, huella, libro_id),
         )
 
     def _sellar(self, conexion: sqlite3.Connection, libro_id: str) -> None:
-        self._actualizar_manifiesto(conexion, libro_id)
         conexion.execute("UPDATE catalogo_libros SET estado='sellado' WHERE id=?", (libro_id,))
 
-    def candidatos(self, conexion: sqlite3.Connection, entrada: Iterable[Any], limite: int = 128,
-                   esperado: str | None = None) -> list[str]:
+    def localizar(self, conexion: sqlite3.Connection, entrada: Iterable[Any], limite: int = 128,
+                  esperado: str | None = None) -> LocalizacionCatalogo:
         patron = list(entrada)
         terminos = [f"longitud:{len(patron)}"] + [
             f"posicion:{posicion}:{_canon(valor)}" for posicion, valor in enumerate(patron)
@@ -201,7 +232,18 @@ class Catalogador:
             f"ORDER BY puntuacion DESC, e.importancia DESC, e.momento DESC LIMIT ?",
             parametros,
         ).fetchall()
-        return [fila["episodio_id"] for fila in filas]
+        ids = tuple(fila["episodio_id"] for fila in filas)
+        return LocalizacionCatalogo(
+            ids=ids,
+            terminos_consultados=len(terminos),
+            coincidencias=len(ids),
+            version_catalogo=self.VERSION,
+        )
+
+    def candidatos(self, conexion: sqlite3.Connection, entrada: Iterable[Any], limite: int = 128,
+                   esperado: str | None = None) -> list[str]:
+        """Compatibilidad con Catalogador 0.1."""
+        return list(self.localizar(conexion, entrada, limite, esperado).ids)
 
     def reconstruir(self, conexion: sqlite3.Connection) -> dict[str, int]:
         """Regenera todos los mapas desde la memoria canónica."""
@@ -223,11 +265,28 @@ class Catalogador:
             "SELECT COUNT(*) FROM catalogo_ubicaciones u LEFT JOIN episodios e "
             "ON e.id=u.episodio_id WHERE e.id IS NULL"
         ).fetchone()[0]
+        referencias_huerfanas = conexion.execute(
+            "SELECT COUNT(*) FROM catalogo_indice i LEFT JOIN episodios e "
+            "ON e.id=i.episodio_id WHERE e.id IS NULL"
+        ).fetchone()[0]
+        manifiestos_incoherentes = 0
+        for fila in conexion.execute("SELECT id, cantidad, manifiesto, huella FROM catalogo_libros"):
+            texto = fila["manifiesto"]
+            manifiesto = json.loads(texto)
+            reales = conexion.execute(
+                "SELECT COUNT(*) FROM catalogo_ubicaciones WHERE libro_id=?", (fila["id"],)
+            ).fetchone()[0]
+            huella = hashlib.sha256(texto.encode("utf-8")).hexdigest()
+            if reales != fila["cantidad"] or manifiesto.get("cantidad") != reales or huella != fila["huella"]:
+                manifiestos_incoherentes += 1
+        valido = episodios == ubicados and huerfanos == 0 and referencias_huerfanas == 0 and manifiestos_incoherentes == 0
         return {
-            "valido": episodios == ubicados and huerfanos == 0,
+            "valido": valido,
             "episodios": episodios,
             "ubicados": ubicados,
             "huerfanos": huerfanos,
+            "referencias_huerfanas": referencias_huerfanas,
+            "manifiestos_incoherentes": manifiestos_incoherentes,
         }
 
     def estado(self, conexion: sqlite3.Connection) -> dict[str, int]:

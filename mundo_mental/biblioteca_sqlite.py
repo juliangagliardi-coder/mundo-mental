@@ -1,4 +1,4 @@
-"""Biblioteca 0.3 experimental con memoria activa en SQLite/WAL."""
+"""Biblioteca experimental adaptable con memoria activa en SQLite/WAL."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from .biblioteca import _limitar, _normalizar, _similitud
 from .catalogador import Catalogador
+from .contratos_biblioteca import DiagnosticoBusqueda, PuertoCatalogo
 
 
 def _ahora() -> str:
@@ -18,12 +19,13 @@ def _ahora() -> str:
 
 
 class BibliotecaSQLite:
-    """Biblioteca compatible con memoria canónica e índices reconstruibles."""
+    """La Biblioteca interpreta; sus órganos reemplazables almacenan y localizan."""
 
-    VERSION = "0.4.0-experimental"
+    VERSION = "0.5.0-experimental"
 
     def __init__(self, raiz: str | Path = ".mente", ventana_novedad: int = 512,
-                 max_episodios_libro: int = 256):
+                 max_episodios_libro: int = 256,
+                 catalogador: PuertoCatalogo | None = None):
         self.raiz = Path(raiz)
         self.raiz.mkdir(parents=True, exist_ok=True)
         self.db = self.raiz / "biblioteca.sqlite3"
@@ -31,7 +33,8 @@ class BibliotecaSQLite:
         self.archivo_habilidades = self.habilidades / "versiones"
         self.planos = self.raiz / "planos"
         self.ventana_novedad = max(1, ventana_novedad)
-        self.catalogador = Catalogador(max_episodios_libro)
+        self.catalogador: PuertoCatalogo = catalogador or Catalogador(max_episodios_libro)
+        self._ultimo_diagnostico: DiagnosticoBusqueda | None = None
         for sala in (self.habilidades, self.archivo_habilidades, self.planos):
             sala.mkdir(parents=True, exist_ok=True)
         self._crear_esquema()
@@ -68,8 +71,8 @@ class BibliotecaSQLite:
     def _sincronizar_catalogo(self) -> None:
         with self._conexion() as conexion:
             episodios = conexion.execute("SELECT COUNT(*) FROM episodios").fetchone()[0]
-            ubicados = conexion.execute("SELECT COUNT(*) FROM catalogo_ubicaciones").fetchone()[0]
-            if episodios != ubicados:
+            estado = self.catalogador.estado(conexion)
+            if episodios != estado["ubicaciones"]:
                 self.catalogador.reconstruir(conexion)
 
     @staticmethod
@@ -164,21 +167,45 @@ class BibliotecaSQLite:
             self.catalogador.catalogar(conexion, episodio)
         return episodio["id"]
 
+    def _filas_exhaustivas(self, conexion: sqlite3.Connection,
+                           esperado: str | None) -> list[sqlite3.Row]:
+        if esperado is None:
+            return conexion.execute("SELECT * FROM episodios").fetchall()
+        return conexion.execute("SELECT * FROM episodios WHERE esperado=?", (esperado,)).fetchall()
+
     def _seleccionar_filas(self, conexion: sqlite3.Connection, objetivo: list[Any], limite: int,
-                           esperado: str | None, estrategia: str) -> list[sqlite3.Row]:
+                           esperado: str | None, estrategia: str) -> tuple[list[sqlite3.Row], DiagnosticoBusqueda]:
         total = conexion.execute(
             "SELECT COUNT(*) FROM episodios WHERE (? IS NULL OR esperado=?)", (esperado, esperado)
         ).fetchone()[0]
         presupuesto = max(64, max(1, limite) * 16)
         if estrategia == "exhaustiva" or total <= presupuesto:
-            if esperado is None:
-                return conexion.execute("SELECT * FROM episodios").fetchall()
-            return conexion.execute("SELECT * FROM episodios WHERE esperado=?", (esperado,)).fetchall()
-        ids = self.catalogador.candidatos(conexion, objetivo, presupuesto, esperado)
-        if not ids:
-            return []
-        marcas = ",".join("?" for _ in ids)
-        return conexion.execute(f"SELECT * FROM episodios WHERE id IN ({marcas})", ids).fetchall()
+            filas = self._filas_exhaustivas(conexion, esperado)
+            return filas, DiagnosticoBusqueda(
+                estrategia, "exhaustiva", total, presupuesto, len(filas), len(filas)
+            )
+        try:
+            localizacion = self.catalogador.localizar(conexion, objetivo, presupuesto, esperado)
+            if not localizacion.ids and total:
+                filas = self._filas_exhaustivas(conexion, esperado)
+                return filas, DiagnosticoBusqueda(
+                    estrategia, "exhaustiva_degradada", total, presupuesto, 0, len(filas), True,
+                    "El catálogo no señaló candidatos; la Biblioteca protegió la recuperación exhaustiva.",
+                )
+            marcas = ",".join("?" for _ in localizacion.ids)
+            filas = conexion.execute(
+                f"SELECT * FROM episodios WHERE id IN ({marcas})", localizacion.ids
+            ).fetchall()
+            return filas, DiagnosticoBusqueda(
+                estrategia, "catalogo", total, presupuesto,
+                localizacion.coincidencias, len(filas)
+            )
+        except (sqlite3.DatabaseError, ValueError, KeyError, json.JSONDecodeError) as error:
+            filas = self._filas_exhaustivas(conexion, esperado)
+            return filas, DiagnosticoBusqueda(
+                estrategia, "exhaustiva_degradada", total, presupuesto, 0, len(filas), True,
+                f"El catálogo falló de forma recuperable: {type(error).__name__}.",
+            )
 
     def buscar_similares(self, entrada: Iterable[Any], limite: int = 5,
                          esperado: str | None = None, explicar: bool = True,
@@ -187,7 +214,9 @@ class BibliotecaSQLite:
             raise ValueError("estrategia debe ser 'catalogo' o 'exhaustiva'")
         objetivo = _normalizar(entrada)
         with self._conexion() as conexion:
-            filas = self._seleccionar_filas(conexion, objetivo, limite, esperado, estrategia)
+            filas, diagnostico = self._seleccionar_filas(
+                conexion, objetivo, limite, esperado, estrategia
+            )
             candidatos = [self._episodio(fila) for fila in filas]
             for recuerdo in candidatos:
                 similitud = _similitud(objetivo, recuerdo["entrada"])
@@ -208,7 +237,20 @@ class BibliotecaSQLite:
                 "UPDATE episodios SET accesos=accesos+1, ultimo_acceso=? WHERE id=?",
                 [(momento, x["id"]) for x in elegidos],
             )
+            self._ultimo_diagnostico = DiagnosticoBusqueda(
+                diagnostico.estrategia_solicitada,
+                diagnostico.estrategia_usada,
+                diagnostico.total_episodios,
+                diagnostico.presupuesto_candidatos,
+                diagnostico.candidatos_localizados,
+                len(candidatos),
+                diagnostico.degradada,
+                diagnostico.motivo,
+            )
             return elegidos
+
+    def diagnostico_ultima_busqueda(self) -> dict[str, Any] | None:
+        return self._ultimo_diagnostico.exportar() if self._ultimo_diagnostico else None
 
     def consolidar(self, minimo_ejemplos: int = 2) -> dict[str, dict[str, Any]]:
         grupos: dict[str, list[dict[str, Any]]] = {}
