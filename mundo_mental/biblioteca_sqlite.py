@@ -17,9 +17,9 @@ def _ahora() -> str:
 
 
 class BibliotecaSQLite:
-    """Alternativa optativa para medir persistencia indexada sin reemplazar 0.2."""
+    """Alternativa indexada, compatible y reversible para la Biblioteca."""
 
-    VERSION = "0.3.0-experimental"
+    VERSION = "0.3.1-experimental"
 
     def __init__(self, raiz: str | Path = ".mente", ventana_novedad: int = 512):
         self.raiz = Path(raiz)
@@ -68,6 +68,58 @@ class BibliotecaSQLite:
         salida["correcto"] = bool(salida["correcto"])
         salida["protegido"] = bool(salida["protegido"])
         return salida
+
+    def exportar_episodios(self) -> list[dict[str, Any]]:
+        """Entrega una fotografía ordenada para verificar o revertir migraciones."""
+        with self._conexion() as conexion:
+            return [self._episodio(fila) for fila in conexion.execute(
+                "SELECT * FROM episodios ORDER BY momento, id"
+            )]
+
+    def importar_episodios(self, episodios: Iterable[dict[str, Any]]) -> dict[str, int]:
+        """Importa episodios conservando identidad; repetir la operación es seguro."""
+        recibidos = 0
+        with self._conexion() as conexion:
+            antes = conexion.execute("SELECT COUNT(*) FROM episodios").fetchone()[0]
+            for episodio in episodios:
+                recibidos += 1
+                conexion.execute(
+                    "INSERT OR IGNORE INTO episodios VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        episodio["id"], episodio["momento"],
+                        json.dumps(episodio["entrada"], ensure_ascii=False),
+                        episodio["respuesta"], episodio["esperado"], int(episodio["correcto"]),
+                        float(episodio["importancia"]), float(episodio["novedad"]),
+                        int(episodio.get("protegido", False)), episodio.get("accesos", 0),
+                        episodio.get("repeticiones", 1), episodio.get("ultimo_acceso"),
+                        json.dumps(episodio.get("metadata", {}), ensure_ascii=False),
+                    ),
+                )
+            despues = conexion.execute("SELECT COUNT(*) FROM episodios").fetchone()[0]
+        return {"recibidos": recibidos, "insertados": despues - antes, "omitidos": recibidos - (despues - antes)}
+
+    def importar_conceptos(self, conceptos: dict[str, dict[str, Any]]) -> int:
+        with self._conexion() as conexion:
+            conexion.executemany(
+                "INSERT INTO conceptos VALUES (?, ?) ON CONFLICT(nombre) DO UPDATE SET contenido=excluded.contenido",
+                [(nombre, json.dumps(concepto, ensure_ascii=False)) for nombre, concepto in conceptos.items()],
+            )
+        return len(conceptos)
+
+    def importar_obras(self, obras: Iterable[dict[str, Any]]) -> dict[str, int]:
+        recibidas = 0
+        with self._conexion() as conexion:
+            antes = conexion.execute("SELECT COUNT(*) FROM obras").fetchone()[0]
+            for obra in obras:
+                recibidas += 1
+                conexion.execute(
+                    "INSERT OR IGNORE INTO obras VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (obra["id"], obra["momento"], obra.get("habilidad"), obra.get("tipo"),
+                     int(obra.get("aceptada", False)), obra.get("precision_candidata"),
+                     json.dumps(obra, ensure_ascii=False)),
+                )
+            despues = conexion.execute("SELECT COUNT(*) FROM obras").fetchone()[0]
+        return {"recibidas": recibidas, "insertadas": despues - antes, "omitidas": recibidas - (despues - antes)}
 
     def recordar(self, entrada: Iterable[Any], respuesta: str, esperado: str, correcto: bool,
                  metadata: dict[str, Any] | None = None, importancia: float | None = None,
@@ -124,39 +176,62 @@ class BibliotecaSQLite:
             return elegidos
 
     def consolidar(self, minimo_ejemplos: int = 2) -> dict[str, dict[str, Any]]:
-        with self._conexion() as conexion:
-            filas = conexion.execute("SELECT * FROM episodios ORDER BY momento").fetchall()
-            grupos: dict[str, list[dict[str, Any]]] = {}
-            for fila in filas:
-                episodio = self._episodio(fila)
-                grupos.setdefault(episodio["esperado"], []).append(episodio)
-            conceptos = {}
-            for nombre, episodios in grupos.items():
-                unicos = {json.dumps(x["entrada"], ensure_ascii=False) for x in episodios}
-                if len(unicos) < minimo_ejemplos:
-                    continue
-                longitudes = {len(x["entrada"]) for x in episodios}
-                rasgos = []
-                if len(longitudes) == 1:
-                    for posicion in range(next(iter(longitudes))):
-                        valores = {x["entrada"][posicion] for x in episodios}
-                        rasgos.append(next(iter(valores)) if len(valores) == 1 else "*")
-                concepto = {
-                    "nombre": nombre, "episodios": len(episodios), "ejemplos_unicos": len(unicos),
-                    "fiabilidad": _limitar(sum(x["correcto"] for x in episodios) / len(episodios)),
-                    "rasgos_comunes": rasgos, "actualizado": _ahora(),
-                }
-                conceptos[nombre] = concepto
-                conexion.execute(
-                    "INSERT INTO conceptos VALUES (?, ?) ON CONFLICT(nombre) DO UPDATE SET contenido=excluded.contenido",
-                    (nombre, json.dumps(concepto, ensure_ascii=False)),
-                )
-            return conceptos
+        grupos: dict[str, list[dict[str, Any]]] = {}
+        for episodio in self.exportar_episodios():
+            grupos.setdefault(episodio["esperado"], []).append(episodio)
+        conceptos = {}
+        for nombre, episodios in grupos.items():
+            unicos = {json.dumps(x["entrada"], ensure_ascii=False) for x in episodios}
+            if len(unicos) < minimo_ejemplos:
+                continue
+            longitudes = {len(x["entrada"]) for x in episodios}
+            rasgos = []
+            if len(longitudes) == 1:
+                for posicion in range(next(iter(longitudes))):
+                    valores = {x["entrada"][posicion] for x in episodios}
+                    rasgos.append(next(iter(valores)) if len(valores) == 1 else "*")
+            conceptos[nombre] = {
+                "nombre": nombre, "episodios": len(episodios), "ejemplos_unicos": len(unicos),
+                "fiabilidad": _limitar(sum(x["correcto"] for x in episodios) / len(episodios)),
+                "rasgos_comunes": rasgos, "actualizado": _ahora(),
+            }
+        self.importar_conceptos(conceptos)
+        return conceptos
 
     def cargar_conceptos(self) -> dict[str, dict[str, Any]]:
         with self._conexion() as conexion:
             return {fila["nombre"]: json.loads(fila["contenido"])
                     for fila in conexion.execute("SELECT * FROM conceptos")}
+
+    def depurar(self, max_recuerdos: int | None = None) -> dict[str, int]:
+        """Replica la política 0.2: fusiona duplicados y respeta recuerdos protegidos."""
+        recuerdos = self.exportar_episodios()
+        fusionados: dict[tuple[str, str], dict[str, Any]] = {}
+        for recuerdo in recuerdos:
+            clave = (json.dumps(recuerdo["entrada"], ensure_ascii=False), recuerdo["esperado"])
+            if clave not in fusionados:
+                fusionados[clave] = recuerdo
+                continue
+            actual = fusionados[clave]
+            repeticiones = actual.get("repeticiones", 1) + recuerdo.get("repeticiones", 1)
+            accesos = actual.get("accesos", 0) + recuerdo.get("accesos", 0)
+            protegido = actual.get("protegido", False) or recuerdo.get("protegido", False)
+            if recuerdo.get("importancia", 0) > actual.get("importancia", 0):
+                actual = recuerdo
+                fusionados[clave] = actual
+            actual["repeticiones"] = repeticiones
+            actual["accesos"] = accesos
+            actual["protegido"] = protegido
+        salida = list(fusionados.values())
+        if max_recuerdos is not None and len(salida) > max_recuerdos:
+            protegidos = [x for x in salida if x.get("protegido")]
+            libres = [x for x in salida if not x.get("protegido")]
+            libres.sort(key=lambda x: (not x["correcto"], x.get("importancia", 0), x.get("accesos", 0)), reverse=True)
+            salida = protegidos + libres[:max(0, max_recuerdos - len(protegidos))]
+        with self._conexion() as conexion:
+            conexion.execute("DELETE FROM episodios")
+        self.importar_episodios(sorted(salida, key=lambda x: x["momento"]))
+        return {"antes": len(recuerdos), "despues": len(salida), "fusionados": len(recuerdos) - len(salida)}
 
     def guardar_habilidad(self, nombre: str, estado: dict[str, Any]) -> Path:
         ruta = self.habilidades / f"{nombre}.json"
@@ -178,18 +253,14 @@ class BibliotecaSQLite:
         registro = dict(obra)
         registro.setdefault("id", str(uuid4()))
         registro.setdefault("momento", _ahora())
-        with self._conexion() as conexion:
-            conexion.execute(
-                "INSERT INTO obras VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (registro["id"], registro["momento"], registro.get("habilidad"), registro.get("tipo"),
-                 int(registro.get("aceptada", False)), registro.get("precision_candidata"),
-                 json.dumps(registro, ensure_ascii=False)),
-            )
+        self.importar_obras([registro])
         return registro["id"]
 
     def historial_obras(self) -> list[dict[str, Any]]:
         with self._conexion() as conexion:
-            return [json.loads(x["contenido"]) for x in conexion.execute("SELECT contenido FROM obras")]
+            return [json.loads(x["contenido"]) for x in conexion.execute(
+                "SELECT contenido FROM obras ORDER BY momento, id"
+            )]
 
     def consultar_obras(self, habilidad: str | None = None, tipo: str | None = None,
                          limite: int = 5) -> list[dict[str, Any]]:
