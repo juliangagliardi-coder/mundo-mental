@@ -2,7 +2,7 @@ name: Inspeccionar Palacio Mental
 
 on:
   push:
-    branches: [main]
+    branches: [main, "evolucion/**"]
   pull_request:
     branches: [main]
 
@@ -29,3 +29,5 @@ jobs:
         run: python iniciar.py
       - name: Comprobar Viabilidad 0.1
         run: python benchmarks/viabilidad_01.py --sizes 4 8 --output /tmp/viabilidad.json
+      - name: Comparar Bibliotecas experimentales
+        run: python benchmarks/comparar_bibliotecas.py --sizes 4 8 --output /tmp/comparativa.json
