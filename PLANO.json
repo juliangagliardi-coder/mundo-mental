@@ -1,19 +1,23 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "nombre": "Palacio Mental",
   "aspectos": [
     {
       "id": "biblioteca",
-      "responsabilidad": "Recordar experiencias, habilidades, planos y obras",
-      "estado": "activo"
+      "version": "0.2.0",
+      "responsabilidad": "Recordar episodios, consolidar conceptos, versionar habilidades y archivar obras",
+      "estado": "activo",
+      "salas": ["episodica", "semantica", "procedimental", "urbanistica"]
     },
     {
       "id": "corazon",
+      "version": "0.1.0",
       "responsabilidad": "Diagnosticar, proponer, inspeccionar y consolidar ampliaciones",
       "estado": "activo"
     },
     {
       "id": "calles",
+      "version": "0.1.0",
       "responsabilidad": "Transportar mensajes tipados entre las partes de la ciudad",
       "estado": "activo"
     }
@@ -46,6 +50,12 @@
       "origen": "casa_patrones",
       "destino": "biblioteca",
       "mensaje": "experiencia"
+    },
+    {
+      "id": "biblioteca_a_corazon",
+      "origen": "biblioteca",
+      "destino": "corazon",
+      "mensaje": "antecedentes_urbanisticos"
     }
   ]
 }
