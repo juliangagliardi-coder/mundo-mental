@@ -1,68 +1,27 @@
-# Viabilidad 0.1
+# Viabilidad del Palacio Mental
 
-## Objetivo
+## Principio
 
-Viabilidad 0.1 crea una línea base reproducible del Palacio actual. Su propósito es descubrir dónde crecen el tiempo, la memoria y el almacenamiento antes de implementar Guardián, Centinela o Curiosidad autónoma.
+Viabilizar no significa aplanar a los Aspectos. El rendimiento computacional y la riqueza de identidad se miden por separado: una mejora no puede borrar voz, memoria autobiográfica, principios, relaciones o tensiones internas.
 
-Esta fase **mide y diagnostica; no optimiza ni complejiza**. Todo cambio de comportamiento derivado de los resultados se propondrá al creador antes de implementarse.
+## Viabilidad 0.1
 
-## Qué mide
+La primera etapa creó una línea base reproducible y una Biblioteca SQLite/WAL experimental. La implementación estable JSONL se mantuvo intacta para poder comparar ambas rutas.
 
-El banco inicial registra:
+## Viabilidad 0.2
 
-- Tiempo para incorporar episodios en la Biblioteca.
-- Tiempo para buscar recuerdos similares.
-- Tiempo para consolidar conceptos.
-- Tiempo de inferencia de una Casa con distintos números de ejemplos.
-- Memoria máxima observada por `tracemalloc`.
-- Tamaño persistente de la mente temporal.
-- Entorno, versión de Python y parámetros usados.
+La segunda etapa incorpora una migración reversible y verificable:
 
-## Qué no afirma
+- La Biblioteca de origen nunca se modifica ni se elimina.
+- Episodios, identificadores, momentos, metadatos, conceptos y obras conservan su contenido.
+- Habilidades, versiones y planos se copian sin sobrescribir conflictos.
+- La migración es idempotente: puede repetirse sin duplicar recuerdos u obras.
+- Una huella SHA-256 canónica compara origen y destino antes de declarar éxito.
+- Biblioteca SQLite incorpora la misma política de depuración que Biblioteca 0.2.
+- El Inspector prueba migración, repetición, conservación de identidad y depuración equivalente.
 
-Los resultados no comparan al Palacio con una persona, no miden creatividad y no demuestran escalabilidad futura. Sirven para comparar versiones del mismo código, bajo el mismo protocolo y en hardware conocido.
+La existencia de esta ruta no promueve todavía SQLite a Biblioteca estable. Primero deben superarse equivalencia funcional, benchmarks repetidos y pruebas de recuperación.
 
-## Uso
+## Siguiente umbral
 
-```bash
-python benchmarks/viabilidad_01.py --sizes 100 1000 --output viabilidad.json
-```
-
-Los tamaños grandes pueden tardar mucho precisamente porque esta versión conserva intencionadamente los algoritmos actuales. El modo de CI utiliza cargas pequeñas y solo comprueba que el instrumento siga funcionando; no establece umbrales de rendimiento dependientes de la máquina.
-
-## Protocolo
-
-Para comparar dos versiones:
-
-1. Usar la misma máquina y versión de Python.
-2. Cerrar cargas ajenas importantes.
-3. Ejecutar varias veces y conservar todas las mediciones.
-4. Comparar medianas, no una única ejecución.
-5. Mantener idénticos tamaños y semilla.
-6. Registrar cambios de disco, sistema operativo y configuración.
-7. No presentar una mejora hasta medir también exactitud, conservación e identidad.
-
-## Hallazgos que buscará
-
-- Crecimiento lineal, cuadrático o inesperado.
-- Relecturas y reescrituras completas.
-- Picos de memoria.
-- Coste de consolidar con frecuencia.
-- Umbral a partir del cual una operación deja de ser interactiva.
-- Diferencias entre coste temporal y coste persistente.
-
-## Puertas de consulta
-
-Un resultado puede originar propuestas como índices, SQLite/WAL, lotes, cachés, snapshots incrementales, paralelismo o cambios de representación. Ninguna se aplicará automáticamente. Cada propuesta incluirá:
-
-- Evidencia medida.
-- Alternativas, incluida no hacer nada.
-- Beneficio esperado y criterio de éxito.
-- Complejidad añadida.
-- Riesgos de seguridad y pérdida de conocimiento.
-- Efecto sobre personalidad e identidad de cada Aspecto.
-- Plan reversible y pruebas.
-
-## Criterio de terminación
-
-Viabilidad 0.1 termina cuando el banco puede ejecutarse de forma repetible, exporta resultados legibles por máquinas y la integración continua prueba su funcionamiento. La elección e implementación de optimizaciones pertenece a una fase posterior consultada.
+Viabilidad 0.3 deberá medir varias repeticiones y percentiles, aislar el coste de apertura de conexiones, evaluar ventanas crecientes y probar recuperación tras interrupciones. Ningún resultado será interpretado como mejora de inteligencia: solo como evidencia de coste, escalabilidad y seguridad operacional.
