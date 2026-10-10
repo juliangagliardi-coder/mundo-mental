@@ -12,6 +12,7 @@ from .casa_patrones import CasaPatrones
 from .corazon import Corazon
 from .calles import Calle, Calles, Mensaje, Router
 from .curiosidad import Curiosidad, Pregunta, ResultadoExperimento
+from .evidencia import DictamenEvidencia, ValidadorEvidencia
 from .migracion import InformeMigracion, migrar_biblioteca
 from .observacion import Alarma, BuzonAlarmas, Centinela, Guardian
 from .sistema_nervioso import EstadisticasNerviosas, Impulso, Reaccion, SistemaNervioso
@@ -23,7 +24,7 @@ __all__ = [
     "Biblioteca", "BibliotecaSQLite", "Catalogador",
     "DiagnosticoBusqueda", "LocalizacionCatalogo", "PuertoCatalogo",
     "CasaPatrones", "Corazon", "Calle", "Calles", "Mensaje", "Router",
-    "Curiosidad", "Pregunta", "ResultadoExperimento", "InformeMigracion", "migrar_biblioteca",
-    "Alarma", "BuzonAlarmas", "Centinela", "Guardian",
+    "Curiosidad", "Pregunta", "ResultadoExperimento", "DictamenEvidencia", "ValidadorEvidencia",
+    "InformeMigracion", "migrar_biblioteca", "Alarma", "BuzonAlarmas", "Centinela", "Guardian",
     "EstadisticasNerviosas", "Impulso", "Reaccion", "SistemaNervioso", "TejidoMental",
 ]
