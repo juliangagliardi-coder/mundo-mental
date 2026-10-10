@@ -5,11 +5,16 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import sys
 import tempfile
 import time
 import tracemalloc
 from pathlib import Path
 from typing import Any, Callable
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from mundo_mental import Biblioteca, BibliotecaSQLite
 
@@ -37,17 +42,28 @@ def medir(fabrica: Callable[[Path], Any], tamano: int) -> dict[str, Any]:
         _, pico = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         bytes_disco = sum(x.stat().st_size for x in raiz.rglob("*") if x.is_file())
-        return {"incorporar_s": incorporar, "buscar_s": buscar, "consolidar_s": consolidar,
-                "pico_bytes": pico, "disco_bytes": bytes_disco}
+        return {
+            "incorporar_s": incorporar,
+            "buscar_s": buscar,
+            "consolidar_s": consolidar,
+            "pico_bytes": pico,
+            "disco_bytes": bytes_disco,
+        }
 
 
 def comparar(tamanos: list[int]) -> dict[str, Any]:
+    if not tamanos or any(tamano <= 0 for tamano in tamanos):
+        raise ValueError("Todos los tamaños deben ser enteros positivos")
     return {
         "instrumento": "comparativa-bibliotecas-0.1",
         "python": platform.python_version(),
         "resultados": [
-            {"episodios": n, "jsonl": medir(Biblioteca, n),
-             "sqlite": medir(lambda ruta: BibliotecaSQLite(ruta), n)} for n in tamanos
+            {
+                "episodios": n,
+                "jsonl": medir(Biblioteca, n),
+                "sqlite": medir(lambda ruta: BibliotecaSQLite(ruta), n),
+            }
+            for n in tamanos
         ],
         "nota": "Medición local de implementaciones; no mide inteligencia.",
     }
@@ -61,6 +77,7 @@ def main() -> None:
     informe = comparar(args.sizes)
     texto = json.dumps(informe, ensure_ascii=False, indent=2)
     if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(texto + "\n", encoding="utf-8")
     print(texto)
 
