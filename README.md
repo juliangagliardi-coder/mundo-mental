@@ -1,14 +1,18 @@
 # Mundo Mental
 
-Un experimento para construir un **palacio mental modular** que pueda recordar experiencias, reutilizar habilidades y ampliar su estructura sin destruir lo aprendido.
+Un experimento para construir un **palacio mental modular** que pueda recordar, investigar, ampliar su estructura y recuperarse sin destruir lo aprendido.
 
-Esta versión es pequeña y genérica. No depende de fútbol, imágenes ni lenguaje: trabaja con patrones simples para demostrar el ciclo fundamental del sistema.
+Esta versión es pequeña y genérica. Trabaja con patrones simples para demostrar los mecanismos fundamentales.
 
-## Biblioteca 0.2
+## Arquitectura actual
 
-La Biblioteca actual separa memoria episódica, semántica y procedimental. Valora recuerdos por novedad, sorpresa e importancia; explica por qué recupera cada experiencia; consolida conceptos; fusiona duplicados; protege recuerdos importantes; archiva habilidades anteriores y ofrece al Corazón el historial de reformas.
+- **Biblioteca 0.2:** memoria episódica, semántica, procedimental y urbanística.
+- **Corazón 0.1:** reformas candidatas, inspección y protección de conocimientos.
+- **Calles 0.1:** mensajes tipados entre componentes.
+- **Curiosidad 0.3-plan:** Aspecto interno que gobernará experimentos y preguntas propias.
+- **Observación 0.3-plan:** supervisor independiente con eventos, cuarentena, parada y rollback.
 
-Consulta [BIBLIOTECA.md](BIBLIOTECA.md) para conocer sus salas y operaciones.
+Consulta [BIBLIOTECA.md](BIBLIOTECA.md), [CURIOSIDAD.md](CURIOSIDAD.md), [OBSERVACION.md](OBSERVACION.md), [CONSTITUCION.md](CONSTITUCION.md) y [DECISIONES.md](DECISIONES.md).
 
 ## Probarlo
 
@@ -19,26 +23,8 @@ python iniciar.py
 python -m unittest discover -s tests -v
 ```
 
-La demostración crea `.mente/` con su propia memoria local. Esa historia no se sube a GitHub.
+La demostración crea `.mente/` con memoria local. Esa historia no se sube a GitHub.
 
-## Estructura
+## Estado honesto
 
-```text
-mundo-mental/
-├── CONSTITUCION.md
-├── BIBLIOTECA.md
-├── PLANO.json
-├── iniciar.py
-├── mundo_mental/
-│   ├── biblioteca.py
-│   ├── casa_patrones.py
-│   ├── calles.py
-│   └── corazon.py
-└── tests/
-```
-
-## Estado
-
-**Cimiento 0.2:** puede recordar, explicar, consolidar, depurar, versionar habilidades, consultar reformas anteriores y decidir si una ampliación debe conservarse.
-
-Todavía no es una mente general ni consciente. Es una base pequeña, comprobable y preparada para recibir nuevos Aspectos.
+Biblioteca, Corazón, Calles y la Casa de patrones tienen un primer prototipo ejecutable. Curiosidad y Observación están diseñadas, pero todavía no implementadas. El próximo incremento construirá primero el contrato de eventos y Observación mínima; solo entonces se ampliará la autonomía ejecutable de Curiosidad.

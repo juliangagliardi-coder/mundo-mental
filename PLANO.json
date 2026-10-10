@@ -1,13 +1,30 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0-plan",
   "nombre": "Palacio Mental",
   "aspectos": [
+    {
+      "id": "observacion",
+      "version": "0.1.0-plan",
+      "nivel": "supervision_independiente",
+      "responsabilidad": "Observar eventos, aplicar políticas, congelar el Palacio y gestionar checkpoints y rollback",
+      "estado": "planificado",
+      "autoridad": ["denegar", "limitar", "aislar", "congelar", "restaurar"]
+    },
     {
       "id": "biblioteca",
       "version": "0.2.0",
       "responsabilidad": "Recordar episodios, consolidar conceptos, versionar habilidades y archivar obras",
       "estado": "activo",
-      "salas": ["episodica", "semantica", "procedimental", "urbanistica"]
+      "salas": ["episodica", "semantica", "procedimental", "urbanistica"],
+      "aspectos_internos": ["curiosidad"]
+    },
+    {
+      "id": "curiosidad",
+      "version": "0.1.0-plan",
+      "padre": "biblioteca",
+      "responsabilidad": "Formular preguntas, gobernar el laboratorio y proponer mejoras",
+      "estado": "planificado",
+      "contiene": ["micro_corazon"]
     },
     {
       "id": "corazon",
@@ -18,7 +35,7 @@
     {
       "id": "calles",
       "version": "0.1.0",
-      "responsabilidad": "Transportar mensajes tipados entre las partes de la ciudad",
+      "responsabilidad": "Transportar mensajes tipados y eventos entre las partes de la ciudad",
       "estado": "activo"
     }
   ],
@@ -56,6 +73,22 @@
       "origen": "biblioteca",
       "destino": "corazon",
       "mensaje": "antecedentes_urbanisticos"
+    },
+    {
+      "id": "todos_a_observacion",
+      "origen": "*",
+      "destino": "observacion",
+      "mensaje": "evento_previo_y_resultado",
+      "obligatoria": true
+    },
+    {
+      "id": "observacion_a_todos",
+      "origen": "observacion",
+      "destino": "*",
+      "mensaje": "decision_de_seguridad",
+      "prioridad": "absoluta"
     }
-  ]
+  ],
+  "estados_globales": ["despierto", "reposo", "sueno", "cuarentena", "pausa", "alarma"],
+  "regla_fallo": "Si Observación pierde visibilidad o integridad, toda nueva mutación se deniega"
 }
