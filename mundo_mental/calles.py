@@ -1,11 +1,14 @@
-"""Calles tipadas para evitar conexiones invisibles entre módulos."""
+"""Calles tipadas y su identidad relacional dentro del Palacio."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable
 from uuid import uuid4
+
+from .aspecto import Aspecto, IdentidadAspecto
 
 
 @dataclass(frozen=True)
@@ -57,3 +60,38 @@ class Router:
         if calle.destino not in self.destinos:
             raise KeyError(f"No existe el destino {calle.destino}")
         return self.destinos[calle.destino](entregado)
+
+
+class Calles(Aspecto, Router):
+    """Identidad relacional opcional sobre el Router compatible existente."""
+
+    IDENTIDAD = IdentidadAspecto(
+        nombre="Calles",
+        esencia="Tejido relacional que protege significado y fronteras durante el tránsito",
+        proposito="Permitir cooperación explícita sin crear accesos invisibles entre Aspectos",
+        perspectiva="Observa contratos, destinos, aislamiento y calidad de las conexiones",
+        principios=("conexiones_explicitas", "preservar_origen", "fallar_sin_disolver_fronteras"),
+        voz="Concisa, orientadora y neutral respecto del contenido",
+        autoridad=("abrir_calles", "cerrar_calles", "transportar_mensajes"),
+        limites=("interpretar_contenido", "inventar_destinos", "saltarse_contratos"),
+        tensiones=("conexion_y_aislamiento", "rapidez_y_trazabilidad"),
+        relaciones={"sistema_nervioso": "ofrece rutas deliberadas"},
+        sensibilidades={"conexion": 1.0, "aislamiento": 0.9, "fallo_transporte": 1.0},
+    )
+
+    def __init__(self, raiz: str | Path = ".mente"):
+        Aspecto.__init__(self, self.IDENTIDAD, raiz)
+        Router.__init__(self)
+
+    def registrar_calle(self, calle: Calle) -> None:
+        Router.registrar_calle(self, calle)
+        self.narrar("calle_abierta", f"Abrí {calle.id}: {calle.origen} -> {calle.destino}",
+                    tipo=calle.tipo_aceptado)
+
+    def enviar(self, calle_id: str, mensaje: Mensaje) -> Any:
+        try:
+            return Router.enviar(self, calle_id, mensaje)
+        except Exception as error:
+            self.narrar("fallo_transporte", f"No pude transportar por {calle_id}",
+                        mensaje=mensaje.id, error=type(error).__name__)
+            raise

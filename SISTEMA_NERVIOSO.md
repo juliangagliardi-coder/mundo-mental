@@ -1,33 +1,35 @@
-# Sistema Nervioso 0.1
+# Sistema Nervioso 0.2
 
-El Sistema Nervioso es la infraestructura común que permite que el Palacio sienta su propio estado, comparta hallazgos y coordine Aspectos sin convertir cada comunicación en una alarma ni bloquear al emisor.
+El Sistema Nervioso es el tejido común que permite que el Palacio comparta hallazgos, coordine Aspectos y contenga fallos sin convertir cada comunicación en alarma ni conceder autoridad al transporte.
 
 ## Principios
 
-1. **Difusión no es atención.** Un impulso puede llegar a todos, pero cada Aspecto decide desde su identidad si merece atención.
-2. **Publicar no espera.** El emisor deposita el impulso y continúa; cada receptor trabaja durante latidos con presupuesto finito.
-3. **Los reflejos son mínimos.** Solo acciones simples y previamente registradas pueden ejecutarse inmediatamente.
-4. **La urgencia no equivale a verdad.** Afecta al orden de entrega, no a la credibilidad.
-5. **La saturación es visible.** Las bandejas son limitadas y contabilizan lo descartado; los impulsos urgentes desplazan los menos valiosos.
-6. **Una identidad no es una suscripción.** Los temas filtran el tránsito; la decisión final pertenece al Aspecto.
-7. **El sistema nervioso no gobierna.** Transporta, regula y mide; no inventa propósitos.
+1. **Difusión no es atención.** El mismo impulso llega a varias identidades, pero cada una explica por qué lo atiende o ignora.
+2. **Publicar no espera.** El emisor deposita el impulso; cada receptor trabaja durante latidos con presupuesto finito.
+3. **Urgencia no es verdad.** Solo modifica el orden de entrega.
+4. **Los reflejos son mínimos y falibles.** Un reflejo defectuoso queda contabilizado y no rompe la publicación.
+5. **El fallo se contiene.** Un receptor puede reintentarse y, después del límite, su impulso queda en cuarentena.
+6. **La pausa no es olvido.** Un Aspecto puede cerrar temporalmente sus párpados y conservar su bandeja.
+7. **La saturación es visible.** Las colas son limitadas y su presión puede inspeccionarse.
+8. **El Sistema Nervioso no gobierna.** Transporta, regula y mide; no decide propósitos ni modifica identidades.
 
 ## Anatomía
 
-- **Impulso:** unidad inmutable con origen, tipo, temas, importancia, urgencia, destino opcional y correlación.
+- **Impulso:** unidad inmutable con origen, tipo, temas, importancia, urgencia, canal, destino, causa, correlación, caducidad y ruta.
 - **Nervios:** suscripciones que conducen impulsos hacia bandejas independientes.
 - **Bandejas:** memoria de trabajo acotada de cada Aspecto.
 - **Latido:** turno justo y finito de procesamiento.
-- **Atención:** valoración local realizada desde perspectiva, disposiciones e intereses del receptor.
+- **Atención:** valoración local, explicable y dependiente de identidad.
 - **Reflejo:** reacción mínima que no espera interpretación profunda.
-- **Estadísticas:** publicados, duplicados, entregados, atendidos, ignorados, saturación y reflejos.
+- **Cuarentena:** registro de entregas que continuaron fallando después de sus reintentos.
+- **Tejido Mental:** registro y reloj que incorpora Aspectos sin interpretar por ellos.
 
 ## Flujo
 
 ```text
 Aspecto publica un impulso
           |
-          +--> reflejo registrado (solo si existe)
+          +--> reflejo aislado, si existe
           |
           +--> bandejas de suscriptores
                          |
@@ -36,12 +38,24 @@ Aspecto publica un impulso
               cada identidad valora
                    /             \
               atiende           ignora
+                  |
+          puede emitir respuesta
+                  |
+        conserva causa y correlación
 ```
 
-## Coste
+## Prioridad y presión
 
-La publicación cuesta en función del número de suscriptores, no del tamaño de sus pensamientos. Ningún receptor lento detiene al emisor ni a los demás. Los latidos limitan el trabajo por Aspecto y permiten medir la presión antes de introducir concurrencia real.
+Las bandejas ordenan primero por urgencia, después por importancia y finalmente por antigüedad. Si una bandeja está llena, un impulso nuevo solo desplaza a otro cuando es objetivamente más prioritario. Tanto el desplazamiento como la caducidad se contabilizan.
 
-## Evolución prevista
+## Fallos
 
-La versión 0.1 es deliberadamente determinista y usa memoria local. Futuras capas podrán añadir persistencia, reintentos, grupos de consumo y procesos separados sin cambiar el contrato `Impulso -> atención -> Reacción`. Primero se medirán latencia, saturación, justicia y calidad de atención.
+Los receptores no comparten destino de fallo. Una excepción no detiene a otros Aspectos: el impulso espera al siguiente latido hasta agotar su presupuesto de reintentos y luego entra en cuarentena con metadatos diagnósticos, no con una falsa interpretación.
+
+## Trazabilidad
+
+`Impulso.derivar` conserva causa, correlación y ruta. `SistemaNervioso.trazar` permite reconstruir una conversación causal sin obligar a que todos los Aspectos compartan estado interno.
+
+## Límites actuales
+
+La versión 0.2 sigue siendo determinista y local. La persistencia de bandejas, los procesos separados y la distribución pertenecen a iteraciones posteriores. La identidad mutable de cada Aspecto sí se conserva ya mediante escritura atómica, separada de su autobiografía append-only.
