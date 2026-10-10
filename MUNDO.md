@@ -1,28 +1,28 @@
-# Mundo Mental: el juego
+# Mundo Mental: trabajo visible
 
-Ejecuta el reino local con:
+Abre la representación gráfica local con:
 
 ```bash
 python mundo.py
 ```
 
-## Aventura inicial: Las tres brasas
+Esto **no es un juego**. Es una ventana visual sobre un ciclo de trabajo seguro y observable dentro del reino medieval fantástico.
 
-El jugador entra al reino como un viajero. Centinela propone una misión: reunir tres **brasas de asombro** escondidas en el bosque y llevarlas al Corazón. Esta misión es una aventura visual local; no concede permisos ni escribe memoria del sistema.
+## Verlos trabajar
 
-## Controles
+- Pulsa **Iniciar trabajo** para ejecutar el ciclo en repetición.
+- Pulsa **Pausar** para congelarlo.
+- Pulsa **Un paso** para avanzar manualmente una etapa.
+- El habitante activo se ilumina y el panel derecho explica qué hizo.
 
-- **WASD** o **flechas**: caminar.
-- **E** o **Espacio**: interactuar con habitantes, recoger la conclusión del ritual o escuchar el entorno.
-- Arrastra con botón derecho: mover cámara.
-- Rueda del ratón: acercar o alejar.
-- **Pulso de vida**: observar el pulso demostrativo de los Aspectos.
+El ciclo visual siempre sigue esta secuencia:
 
-## Objetivo
+1. Curiosidad detecta una pregunta.
+2. Catalogador clasifica el trabajo.
+3. Biblioteca deja una traza temporal observable.
+4. Corazón evalúa el resultado como candidato.
+5. Centinela audita que no existan efectos persistentes.
 
-1. Explora los caminos y bordes del bosque.
-2. Encuentra las tres luces doradas.
-3. Llega al Corazón con las tres brasas.
-4. Pulsa **E** para encender el ritual.
+Al cerrar cada ciclo, las figuras vuelven a sus posiciones y la traza visual se descarta. La visualización no escribe memoria persistente ni concede permisos: sirve para ver el sistema empezar a trabajar.
 
-El río y los bordes del mapa bloquean el paso. Haz clic en cualquier habitante para ver su estado y actividad.
+Puedes arrastrar con botón derecho para mover la cámara, usar la rueda para zoom y hacer clic en un habitante para inspeccionar su estado.

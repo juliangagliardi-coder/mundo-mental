@@ -1,5 +1,5 @@
 # Ciudad Mental visual
 
-La interfaz ahora se implementa como el **Mundo Virtual 0.1**. Consulta [MUNDO.md](MUNDO.md) para abrir y recorrer el reino medieval fantástico con `python mundo.py`.
+La interfaz se implementa como el **Mundo Virtual: trabajo visible**. Ejecuta `python mundo.py` para abrir el reino medieval fantástico y observar el ciclo automático de Curiosidad, Catalogador, Biblioteca, Corazón y Centinela.
 
-El prototipo anterior de mapa simbólico fue reemplazado por terreno, posiciones físicas, movimiento y cámara. La Ciudad estable conserva su frontera: los experimentos futuros ocurrirán solamente tras la puerta, en Universos de Experimentación autorizados.
+No es un juego ni una capa de control. Es una representación gráfica local y segura: enseña actividad, estados, posiciones y trazas temporales sin escribir memoria persistente ni conceder permisos implícitos.
