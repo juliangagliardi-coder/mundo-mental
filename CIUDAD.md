@@ -1,18 +1,19 @@
 # Ciudad Mental visual
 
-Abre una ciudad gráfica local con:
+Abre la ciudad con:
 
 ```bash
 python mundo.py
 ```
 
-No necesita dependencias externas: usa Tkinter, incluido habitualmente con Python. La ventana muestra la Ciudad estable, sus rutas declaradas, los Aspectos como habitantes, actividad reciente e inspección por clic.
+## Habitantes visibles
 
-## Diseño
+- **Biblioteca:** bibliotecaria de pelo negro, ojos verdes y vestido rojo.
+- **Observador:** figura pálida que duerme muy alto entre nubes; se muestra con un velo de nubes y sin detalle explícito.
+- **Corazón:** corazón gigante rojo con pulsación visible.
+- **Catalogador:** figura alta, totalmente cubierta por armadura oscura.
+- **Centinela:** caballero de armadura más clara, en guardia y con espada bajo el Observador.
 
-- La Ciudad estable contiene Biblioteca, Corazón, Observación y Calles.
-- El Portal no es un laboratorio: conduce a Universos de Experimentación separados que se implementarán como espacios autorizados por Curiosidad.
-- El botón **Simular pulso** genera actividad demostrativa visible sin alterar la memoria persistente del proyecto.
-- El modelo `CiudadMental` mantiene los eventos en memoria y es comprobable sin abrir interfaz gráfica.
+Cada figura se puede seleccionar para ver su estado y actividad. Las apariencias representan presencia visual; no amplían la autoridad de ningún Aspecto.
 
-Esta primera versión visualiza una ciudad viva y sus fronteras. Las siguientes iteraciones conectarán los eventos reales de los Aspectos y los Universos de Experimentación al mismo flujo de actividad.
+El Portal conduce a Universos de Experimentación separados de la Ciudad estable. El botón **Simular pulso** genera actividad demostrativa visible sin alterar la memoria persistente.

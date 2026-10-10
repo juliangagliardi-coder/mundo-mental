@@ -32,27 +32,25 @@ class CiudadMental:
     """Estado visual, deliberadamente separado de las decisiones de los Aspectos."""
 
     LUGARES = {
-        "biblioteca": (195, 235),
-        "corazon": (505, 250),
-        "observacion": (360, 75),
-        "calles": (355, 405),
-        "portal": (675, 110),
+        "biblioteca": (195, 255), "corazon": (505, 270), "observacion": (365, 62),
+        "calles": (355, 420), "portal": (675, 125), "archivo": (115, 395), "guardia": (365, 150),
     }
 
     def __init__(self):
         self.habitantes = {
             "Biblioteca": Habitante("Biblioteca", "biblioteca", "sereno", "Custodia recuerdos"),
             "Curiosidad": Habitante("Curiosidad", "biblioteca", "atenta", "Busca vacíos"),
-            "Corazón": Habitante("Corazón", "corazon", "sereno", "Inspecciona obras"),
-            "Observación": Habitante("Observación", "observacion", "sereno", "Vigila fronteras"),
+            "Corazón": Habitante("Corazón", "corazon", "latiente", "Sostiene el ritmo de la ciudad"),
+            "Observador": Habitante("Observador", "observacion", "durmiente", "Sueña sobre la ciudad"),
+            "Centinela": Habitante("Centinela", "guardia", "en_guardia", "Protege la frontera celeste"),
+            "Catalogador": Habitante("Catalogador", "archivo", "sereno", "Ordena lo que merece nombre"),
             "Calles": Habitante("Calles", "calles", "activa", "Conecta rutas"),
         }
         self.eventos: list[EventoCiudad] = []
         self.rutas = [
-            ("biblioteca", "corazon", "antecedentes"),
-            ("biblioteca", "observacion", "alarma"),
-            ("observacion", "calles", "reanudar"),
-            ("biblioteca", "portal", "solicitud_universo"),
+            ("biblioteca", "corazon", "antecedentes"), ("biblioteca", "observacion", "alarma"),
+            ("observacion", "calles", "reanudar"), ("biblioteca", "portal", "solicitud_universo"),
+            ("archivo", "biblioteca", "catalogar"), ("guardia", "observacion", "guardia"),
         ]
         self.registrar("ciudad_iniciada", "Ciudad", "La ciudad está despierta")
 
@@ -82,16 +80,11 @@ class CiudadMental:
         pregunta = self.registrar("pregunta", "Curiosidad", "Formula una pregunta sobre un vacío de patrones")
         viaje = self.viajar("Curiosidad", "portal", "Solicita un Universo de Experimentación")
         evidencia = self.registrar("evidencia", "Biblioteca", "Espera validación antes de recordar", "biblioteca")
-        vigilancia = self.registrar("vigilancia", "Observación", "Mantiene la ciudad estable", "portal")
+        vigilancia = self.registrar("vigilancia", "Centinela", "Mantiene la guardia bajo el Observador", "observacion")
         return pregunta, viaje, evidencia, vigilancia
 
     def ficha(self, nombre: str) -> dict[str, Any]:
         habitante = self.habitantes[nombre]
         relacionados = [evento for evento in self.eventos if evento.actor == nombre][-6:]
-        return {
-            "nombre": habitante.nombre,
-            "lugar": habitante.lugar,
-            "estado": habitante.estado,
-            "actividad": habitante.actividad,
-            "eventos": relacionados,
-        }
+        return {"nombre": habitante.nombre, "lugar": habitante.lugar, "estado": habitante.estado,
+                "actividad": habitante.actividad, "eventos": relacionados}
