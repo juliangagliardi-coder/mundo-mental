@@ -1,50 +1,71 @@
-"""Demostración de Biblioteca 0.2 y del primer Corazón."""
+"""Demostración ejecutable de un ciclo integrado de Mundo Mental."""
 
-from mundo_mental import Biblioteca, Corazon
+from __future__ import annotations
 
+import tempfile
+from pathlib import Path
 
-def mostrar(resultado):
-    estado = "ACEPTADA" if resultado["aceptada"] else "RECHAZADA"
-    print(f"\nObra {estado}: {resultado['obra_id']}")
-    print(f"Antes: {resultado['precision_antes']:.0%}")
-    print(f"Candidata: {resultado['precision_candidata']:.0%}")
-    print(f"Retención protegida: {resultado['retencion']:.0%}")
-    print(f"Obras anteriores consultadas: {resultado['antecedentes_consultados']}")
-    print(f"Motivo: {resultado['motivo']}")
+from mundo_mental import Alarma, Biblioteca, Curiosidad, Guardian, ValidadorEvidencia
 
 
-def main():
-    biblioteca = Biblioteca(".mente")
-    corazon = Corazon(biblioteca)
+def ejecutar_ciclo(raiz: str | Path) -> dict[str, object]:
+    """Ejecuta un ciclo completo sin promover evidencia ni reanudar sin verificaciones."""
+    biblioteca = Biblioteca(raiz)
+    guardian = Guardian(raiz)
+    curiosidad = Curiosidad(raiz, guardian.buzon)
 
-    fundamentos = [
-        ([0, 0, 0, 0], "igual"),
-        ([1, 1, 1, 1], "igual"),
-        ([0, 1, 0, 1], "alternancia"),
-        ([1, 0, 1, 0], "alternancia"),
-    ]
-    mostrar(corazon.latir("patrones", fundamentos, fundamentos))
+    preguntas = curiosidad.observar_conceptos({
+        "patrones": {"fiabilidad": 0.55, "ejemplos_unicos": 1}
+    })
+    pregunta = preguntas[0]
+    resultado = curiosidad.experimentar(
+        pregunta,
+        "doblar_valor",
+        {"valor": 3},
+        lambda datos: datos["valor"] * 2,
+        supervisar=lambda *_: True,
+    )
+    validador = ValidadorEvidencia(biblioteca)
+    dictamen = validador.evaluar(
+        resultado,
+        corroboracion="repeticion_independiente",
+        entrada=[3],
+        respuesta=str(resultado.salida),
+        esperado="doble",
+    )
 
-    ampliacion = [
-        ([0, 1, 1, 0], "simetria"),
-        ([1, 0, 0, 1], "simetria"),
-    ]
-    mostrar(corazon.latir("patrones", ampliacion, ampliacion, protegidos=fundamentos))
+    guardian.buzon.enviar(Alarma("demostracion", "verificacion_de_recuperacion", "laboratorio", "alta"))
+    incidente = guardian.despertar()[0]
+    reanudado = guardian.cerrar_y_reanudar(
+        incidente["alarma_id"],
+        "La demostración verificó una ejecución aislada y reproducible.",
+        verificacion_aislada=True,
+        verificacion_reproducible=resultado.reproducible,
+    )
+    return {
+        "pregunta": pregunta,
+        "resultado": resultado,
+        "dictamen": dictamen,
+        "incidente": guardian.incidentes[0],
+        "reanudado": reanudado,
+        "estado_biblioteca": biblioteca.estado(),
+    }
 
-    recuerdos = biblioteca.buscar_similares([0, 1, 0, 1], limite=3)
-    print("\nLa Biblioteca recuerda y explica:")
-    for recuerdo in recuerdos:
-        print(f"- {recuerdo['entrada']} -> {recuerdo['esperado']}: {recuerdo['explicacion']}")
 
-    print("\nConceptos consolidados:")
-    for nombre, concepto in biblioteca.consolidar().items():
-        print(f"- {nombre}: {concepto['ejemplos_unicos']} ejemplos, fiabilidad {concepto['fiabilidad']:.0%}")
+def main() -> None:
+    with tempfile.TemporaryDirectory(prefix="mundo-mental-demo-") as carpeta:
+        ciclo = ejecutar_ciclo(carpeta)
+        pregunta = ciclo["pregunta"]
+        resultado = ciclo["resultado"]
+        dictamen = ciclo["dictamen"]
+        incidente = ciclo["incidente"]
 
-    print("\nEstado de la Biblioteca:")
-    for clave, valor in biblioteca.estado().items():
-        print(f"- {clave}: {valor}")
-
-    print("\nBiblioteca 0.2 completó su primer ciclo. La memoria vive en .mente/")
+        print("Mundo Mental: ciclo integrado")
+        print(f"\nPrimera pregunta de Curiosidad:\n- {pregunta.texto}")
+        print(f"\nLaboratorio:\n- {resultado.nombre}: {resultado.estado}; reproducible={resultado.reproducible}; salida={resultado.salida}")
+        print(f"\nEvidencia:\n- {dictamen.motivo}; recuerdo={dictamen.recuerdo_id}")
+        print(f"\nObservación:\n- zona={incidente['zona']}; estado={incidente['estado']}; reanudada={ciclo['reanudado']}")
+        print(f"\nBiblioteca:\n- episodios={ciclo['estado_biblioteca']['episodios']}")
 
 
 if __name__ == "__main__":
