@@ -128,6 +128,46 @@ class Guardian(Aspecto):
         self.leidas += len(alarmas)
         return decisiones
 
+    def incidentes_abiertos(self, zona: str | None = None) -> list[dict[str, Any]]:
+        return [
+            incidente for incidente in self.incidentes
+            if incidente["estado"] != "cerrado" and (zona is None or incidente["zona"] == zona)
+        ]
+
+    def cerrar_y_reanudar(
+        self,
+        alarma_id: str,
+        diagnostico: str,
+        verificacion_aislada: bool,
+        verificacion_reproducible: bool,
+    ) -> bool:
+        """Cierra y reanuda solo con las cuatro señales de seguridad exigidas."""
+        incidente = next((x for x in self.incidentes if x["alarma_id"] == alarma_id), None)
+        if incidente is None or incidente["estado"] == "cerrado":
+            return False
+        criticos_abiertos = [
+            x for x in self.incidentes_abiertos(incidente["zona"])
+            if x["alarma_id"] != alarma_id and x["accion"] == "congelar"
+        ]
+        requisitos = {
+            "diagnostico_documentado": bool(diagnostico.strip()),
+            "verificacion_aislada": bool(verificacion_aislada),
+            "verificacion_reproducible": bool(verificacion_reproducible),
+            "sin_alarmas_criticas_abiertas": not criticos_abiertos,
+        }
+        incidente["requisitos_reanudacion"] = requisitos
+        incidente["diagnostico"] = diagnostico
+        incidente["verificado_en"] = _ahora()
+        if not all(requisitos.values()):
+            incidente["estado"] = "aislamiento_mantenido"
+            self.narrar("reanudar_rechazado", incidente["zona"], alarma_id=alarma_id, **requisitos)
+            return False
+        incidente["estado"] = "cerrado"
+        incidente["accion_final"] = "reanudar"
+        incidente["reanudar_en"] = _ahora()
+        self.narrar("zona_reanudada", incidente["zona"], alarma_id=alarma_id, diagnostico=diagnostico)
+        return True
+
     def dormir(self, motivo: str = "No quedan incidentes activos") -> None:
         self.dormido = True
         self.cambiar_estado("sereno", motivo)
