@@ -8,6 +8,10 @@ python mundo.py
 
 Es el primer terreno físico de Mundo Mental: un reino medieval fantástico local, con bosque, río, caminos de adoquines, casas, una puerta de madera y habitantes con coordenadas reales dentro del mundo.
 
+## Primera llegada
+
+Al entrar, aparece una escena breve y silenciosa bajo el Corazón: Curiosidad sale de los árboles, Biblioteca la recibe, Catalogador acerca un libro aún vacío y Centinela mantiene la guardia bajo el Observador. Es una presentación visual: no registra conocimiento ni concede permisos. Puede repetirse desde **Repetir llegada**.
+
 ## Controles
 
 - Arrastra con botón derecho para mover la cámara.

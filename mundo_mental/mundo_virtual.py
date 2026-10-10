@@ -1,8 +1,4 @@
-"""Mundo virtual persistente y observable de Mundo Mental.
-
-El mundo describe espacio físico, no autoridad. Las decisiones siguen perteneciendo
-al sistema de Aspectos y sus límites constitucionales.
-"""
+"""Mundo virtual persistente y observable de Mundo Mental."""
 
 from __future__ import annotations
 
@@ -46,6 +42,7 @@ class MundoVirtual:
             "Catalogador": SerMundo("Catalogador", 315, 720, actividad="Clasifica hallazgos en silencio"),
         }
         self.eventos: list[EventoMundo] = []
+        self.escena_inicial_vista = False
         self.registrar("mundo_despierto", "Mundo", "La ciudad medieval fantástica despierta")
 
     def registrar(self, tipo: str, actor: str, detalle: str) -> EventoMundo:
@@ -65,6 +62,15 @@ class MundoVirtual:
         ser.rumbo = "este" if x > ser.x else "oeste" if x < ser.x else "sur"
         ser.x, ser.y, ser.actividad = x, y, actividad
         return self.registrar("movimiento", nombre, actividad)
+
+    def escena_llegada(self) -> tuple[EventoMundo, ...]:
+        """Ceremonia visual inicial: no concede permisos ni modifica memoria."""
+        self.escena_inicial_vista = True
+        aparicion = self.mover("Curiosidad", 765, 590, "Aparece entre los árboles ante el Corazón")
+        saludo = self.registrar("ceremonia", "Biblioteca", "Saluda a Curiosidad bajo el Corazón latiente")
+        libro = self.mover("Catalogador", 700, 650, "Trae un libro vacío para futuros hallazgos")
+        guardia = self.registrar("vigilancia", "Centinela", "Permanece en guardia bajo el Observador dormido")
+        return aparicion, saludo, libro, guardia
 
     def pulso_demo(self) -> tuple[EventoMundo, ...]:
         pregunta = self.registrar("pregunta", "Curiosidad", "Detecta un vacío y formula una pregunta")

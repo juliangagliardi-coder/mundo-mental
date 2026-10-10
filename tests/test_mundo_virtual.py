@@ -23,6 +23,13 @@ class PruebasMundoVirtual(unittest.TestCase):
         with self.assertRaises(ValueError):
             mundo.mover("Curiosidad", mundo.ANCHO + 1, 100, "Cruza el límite")
 
+    def test_escena_llegada_reune_a_los_protagonistas_sin_memoria(self):
+        mundo = MundoVirtual()
+        eventos = mundo.escena_llegada()
+        self.assertEqual([evento.tipo for evento in eventos], ["movimiento", "ceremonia", "movimiento", "vigilancia"])
+        self.assertTrue(mundo.escena_inicial_vista)
+        self.assertEqual((mundo.seres["Curiosidad"].x, mundo.seres["Curiosidad"].y), (765, 590))
+
     def test_pulso_cuenta_una_historia_en_el_terreno(self):
         mundo = MundoVirtual()
         eventos = mundo.pulso_demo()
