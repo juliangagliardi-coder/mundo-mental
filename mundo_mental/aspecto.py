@@ -19,6 +19,11 @@ def _limitar(valor: float) -> float:
     return max(0.0, min(1.0, float(valor)))
 
 
+def _normalizar(valor: Any) -> Any:
+    """Devuelve la forma que tendría un valor tras guardarse y leerse como JSON."""
+    return json.loads(json.dumps(valor, ensure_ascii=False))
+
+
 @dataclass(frozen=True)
 class IdentidadAspecto:
     nombre: str
@@ -307,7 +312,7 @@ class Aspecto:
     def _persistir_estado(self) -> None:
         contenido = {
             "version": 1,
-            "nucleo": self.identidad.huella(),
+            "nucleo": _normalizar(self.identidad.huella()),
             "estado_interno": self.estado_interno,
             "necesidades": self.necesidades,
             "disposiciones": self.disposiciones,
@@ -327,7 +332,7 @@ class Aspecto:
             return
         contenido = json.loads(self._estado.read_text(encoding="utf-8"))
         nucleo_guardado = contenido.get("nucleo", {})
-        if nucleo_guardado and nucleo_guardado != self.identidad.huella():
+        if nucleo_guardado and nucleo_guardado != _normalizar(self.identidad.huella()):
             raise RuntimeError(f"La identidad persistida de {self.nombre} no coincide con su núcleo actual")
         self.estado_interno = str(contenido.get("estado_interno", self.estado_interno))
         self.necesidades.update({k: _limitar(v) for k, v in contenido.get("necesidades", {}).items()})
