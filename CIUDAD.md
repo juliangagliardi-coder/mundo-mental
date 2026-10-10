@@ -6,6 +6,11 @@ Abre la ciudad con:
 python mundo.py
 ```
 
+## Espacio visible
+
+- **Calles:** vías de adoquines que conectan los lugares declarados de la ciudad; no son un personaje.
+- **Puerta a Universos:** una puerta de madera simple. Lleva únicamente a Universos de Experimentación separados y autorizados por Curiosidad.
+
 ## Habitantes visibles
 
 - **Biblioteca:** bibliotecaria de pelo negro, ojos verdes y vestido rojo.
@@ -15,6 +20,4 @@ python mundo.py
 - **Catalogador:** figura alta, totalmente cubierta por armadura oscura.
 - **Centinela:** caballero de armadura más clara, en guardia y con espada bajo el Observador.
 
-Cada figura se puede seleccionar para ver su estado y actividad. Las apariencias representan presencia visual; no amplían la autoridad de ningún Aspecto.
-
-El Portal conduce a Universos de Experimentación separados de la Ciudad estable. El botón **Simular pulso** genera actividad demostrativa visible sin alterar la memoria persistente.
+Cada habitante se puede seleccionar para ver su estado y actividad. Las apariencias representan presencia visual; no amplían la autoridad de ningún Aspecto.
