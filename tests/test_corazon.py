@@ -12,8 +12,9 @@ class PruebasCorazon(unittest.TestCase):
             resultado = corazon.latir("patrones", ejemplos, ejemplos)
             self.assertTrue(resultado["aceptada"])
             self.assertEqual(resultado["precision_candidata"], 1.0)
+            self.assertEqual(resultado["antecedentes_consultados"], 0)
 
-    def test_rechaza_una_obra_sin_mejora(self):
+    def test_rechaza_una_obra_sin_mejora_y_consulta_historia(self):
         with tempfile.TemporaryDirectory() as carpeta:
             biblioteca = Biblioteca(carpeta)
             corazon = Corazon(biblioteca)
@@ -21,6 +22,7 @@ class PruebasCorazon(unittest.TestCase):
             self.assertTrue(corazon.latir("patrones", ejemplos, ejemplos)["aceptada"])
             segunda = corazon.latir("patrones", ejemplos, ejemplos, protegidos=ejemplos)
             self.assertFalse(segunda["aceptada"])
+            self.assertEqual(segunda["antecedentes_consultados"], 1)
             self.assertEqual(len(biblioteca.historial_obras()), 2)
 
     def test_conserva_conocimiento_protegido(self):

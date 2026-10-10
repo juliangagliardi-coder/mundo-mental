@@ -1,4 +1,4 @@
-"""El Corazón crea reformas en una copia y protege la ciudad estable."""
+"""El Corazón reforma en una copia y consulta la experiencia urbanística."""
 
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ class Corazon:
         protegidos: Iterable[Ejemplo] = (),
     ) -> dict[str, Any]:
         entrenamiento, pruebas, protegidos = list(entrenamiento), list(pruebas), list(protegidos)
+        antecedentes = self.biblioteca.consultar_obras(habilidad=habilidad, tipo="ampliar_ejemplos")
         estable = CasaPatrones.restaurar(self.biblioteca.cargar_habilidad(habilidad))
         candidata = deepcopy(estable)
 
@@ -54,6 +55,7 @@ class Corazon:
         else:
             motivo = "Mejora lo nuevo, pero daña conocimiento protegido."
 
+        entradas_protegidas = {tuple(entrada) for entrada, _ in protegidos}
         for entrada, esperado in pruebas:
             respuesta, confianza = candidata.predecir(entrada)
             self.biblioteca.recordar(
@@ -66,6 +68,7 @@ class Corazon:
                     "confianza": confianza,
                     "candidata_aceptada": aceptada,
                 },
+                protegido=tuple(entrada) in entradas_protegidas,
             )
 
         obra = {
@@ -79,6 +82,8 @@ class Corazon:
             "retencion": protegida_despues,
             "motivo": motivo,
             "ejemplos_agregados": len(entrenamiento),
+            "antecedentes_consultados": len(antecedentes),
         }
         self.biblioteca.registrar_obra(obra)
+        self.biblioteca.consolidar()
         return {"obra_id": obra["id"], **{k: v for k, v in obra.items() if k != "id"}}

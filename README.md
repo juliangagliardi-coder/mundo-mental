@@ -2,12 +2,13 @@
 
 Un experimento para construir un **palacio mental modular** que pueda recordar experiencias, reutilizar habilidades y ampliar su estructura sin destruir lo aprendido.
 
-Esta primera versión es deliberadamente pequeña y genérica. No depende de fútbol, imágenes ni lenguaje. Trabaja con patrones simples para demostrar el ciclo esencial:
+Esta versión es pequeña y genérica. No depende de fútbol, imágenes ni lenguaje: trabaja con patrones simples para demostrar el ciclo fundamental del sistema.
 
-1. La **Biblioteca** recuerda experiencias, habilidades y reformas.
-2. Una **Casa** aprende una capacidad concreta.
-3. Las **Calles** transportan mensajes con contratos claros.
-4. El **Corazón** crea un candidato, lo inspecciona y solo lo conserva si mejora sin olvidar lo protegido.
+## Biblioteca 0.2
+
+La Biblioteca actual separa memoria episódica, semántica y procedimental. Valora recuerdos por novedad, sorpresa e importancia; explica por qué recupera cada experiencia; consolida conceptos; fusiona duplicados; protege recuerdos importantes; archiva habilidades anteriores y ofrece al Corazón el historial de reformas.
+
+Consulta [BIBLIOTECA.md](BIBLIOTECA.md) para conocer sus salas y operaciones.
 
 ## Probarlo
 
@@ -18,25 +19,26 @@ python iniciar.py
 python -m unittest discover -s tests -v
 ```
 
-La demostración crea una carpeta local `.mente/` con la memoria de ejecución. Esa carpeta no se sube a GitHub porque cada mente debe generar su propia historia.
+La demostración crea `.mente/` con su propia memoria local. Esa historia no se sube a GitHub.
 
 ## Estructura
 
 ```text
 mundo-mental/
-├── CONSTITUCION.md        Reglas que ninguna ampliación puede romper
-├── PLANO.json             Mapa inicial de Aspectos, Barrios, Casas y Calles
-├── iniciar.py             Primera demostración ejecutable
+├── CONSTITUCION.md
+├── BIBLIOTECA.md
+├── PLANO.json
+├── iniciar.py
 ├── mundo_mental/
-│   ├── biblioteca.py      Memoria episódica y archivo de habilidades
-│   ├── casa_patrones.py   Primera Casa entrenable
-│   ├── calles.py          Mensajes, contratos y rutas
-│   └── corazon.py         Construcción, inspección y reversión
-└── tests/                 Pruebas de memoria y crecimiento seguro
+│   ├── biblioteca.py
+│   ├── casa_patrones.py
+│   ├── calles.py
+│   └── corazon.py
+└── tests/
 ```
 
-## Estado actual
+## Estado
 
-**Cimiento 0.1:** ya puede recordar, buscar experiencias parecidas, guardar una habilidad, proponer una ampliación, medirla, aceptarla o rechazarla y registrar la decisión.
+**Cimiento 0.2:** puede recordar, explicar, consolidar, depurar, versionar habilidades, consultar reformas anteriores y decidir si una ampliación debe conservarse.
 
-Todavía no es una mente general ni consciente. Es el primer mecanismo comprobable sobre el que podrán crecer nuevos Aspectos.
+Todavía no es una mente general ni consciente. Es una base pequeña, comprobable y preparada para recibir nuevos Aspectos.
