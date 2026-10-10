@@ -10,56 +10,45 @@ permissions:
   contents: read
 
 jobs:
-  diagnostico-pruebas:
-    name: diagnostico-pruebas
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: python -m unittest discover -s tests -v
-
-  diagnostico-ciclo:
-    name: diagnostico-ciclo
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: python iniciar.py
-
-  diagnostico-viabilidad:
-    name: diagnostico-viabilidad
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: python benchmarks/viabilidad_01.py --sizes 4 8 --output /tmp/viabilidad.json
-
-  diagnostico-comparativa:
-    name: diagnostico-comparativa
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: python benchmarks/comparar_bibliotecas.py --sizes 4 8 --output /tmp/comparativa.json
-
-  pruebas-multiversion:
-    name: pruebas-python-${{ matrix.python-version }}
+  prueba-por-modulo:
+    name: ${{ matrix.modulo }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        modulo:
+          - test_aspecto
+          - test_biblioteca
+          - test_biblioteca_sqlite
+          - test_corazon
+          - test_curiosidad
+          - test_observacion
+          - test_viabilidad
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - run: python -m unittest discover -s tests -v
+          python-version: "3.11"
+      - run: python -m unittest -v tests/${{ matrix.modulo }}.py
+
+  ciclo-y-benchmarks:
+    name: ${{ matrix.comprobacion }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        comprobacion: [ciclo, viabilidad, comparativa]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Ciclo inicial
+        if: matrix.comprobacion == 'ciclo'
+        run: python iniciar.py
+      - name: Viabilidad
+        if: matrix.comprobacion == 'viabilidad'
+        run: python benchmarks/viabilidad_01.py --sizes 4 8 --output /tmp/viabilidad.json
+      - name: Comparativa
+        if: matrix.comprobacion == 'comparativa'
+        run: python benchmarks/comparar_bibliotecas.py --sizes 4 8 --output /tmp/comparativa.json
