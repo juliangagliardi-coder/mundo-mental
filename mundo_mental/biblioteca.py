@@ -132,7 +132,7 @@ class Biblioteca:
         candidatos.sort(
             key=lambda x: (x["puntuacion_recuperacion"], x["momento"]), reverse=True
         )
-        elegidos = candidatos[: max(0, limite)]
+        elegidos = [dict(recuerdo) for recuerdo in candidatos[: max(0, limite)]]
         ids = {x["id"] for x in elegidos}
         if ids:
             momento = _ahora()
