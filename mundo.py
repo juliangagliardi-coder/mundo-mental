@@ -67,51 +67,49 @@ class VentanaCiudad:
         c.create_oval(x - 7, y - 23, x - 3, y - 19, fill="#54d68d", outline="", tags=(etiqueta,)); c.create_oval(x + 3, y - 23, x + 7, y - 19, fill="#54d68d", outline="", tags=(etiqueta,))
         c.create_polygon(x - 17, y - 5, x + 17, y - 5, x + 22, y + 27, x - 22, y + 27, fill="#bd2448", outline="#7c1733", width=2, tags=(etiqueta,))
 
+    def _curiosidad(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
+        """Exploradora luminosa: mira, pregunta y deja ideas orbitando."""
+        latido = math.sin(self.fase / 5)
+        radio = 14 + 2 * latido
+        c.create_oval(x - radio - 5, y - radio - 5, x + radio + 5, y + radio + 5, fill="#2b2460", outline="#7666d9", width=2, tags=(etiqueta,))
+        c.create_oval(x - radio, y - radio, x + radio, y + radio, fill="#f8d75e", outline="#fff5b0", width=2, tags=(etiqueta,))
+        c.create_oval(x - 5, y - 5, x + 5, y + 5, fill="#151533", outline="", tags=(etiqueta,))
+        angulo = self.fase / 6
+        qx, qy = x + math.cos(angulo) * 29, y + math.sin(angulo) * 20
+        c.create_text(qx, qy, text="?", fill="#b7a6ff", font=("Helvetica", 16, "bold"), tags=(etiqueta,))
+        for desfase, color in ((0, "#5ae0ff"), (2.1, "#f48cce"), (4.2, "#b7f56b")):
+            ax = x + math.cos(angulo + desfase) * 36
+            ay = y + math.sin(angulo + desfase) * 25
+            c.create_oval(ax - 3, ay - 3, ax + 3, ay + 3, fill=color, outline="", tags=(etiqueta,))
+
     def _corazon(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
-        pulso = 1 + 0.08 * math.sin(self.fase / 4)
-        r = 31 * pulso
-        c.create_oval(x - r, y - r, x, y, fill="#ec244d", outline="#8c1730", width=2, tags=(etiqueta,))
-        c.create_oval(x, y - r, x + r, y, fill="#ec244d", outline="#8c1730", width=2, tags=(etiqueta,))
-        c.create_polygon(x - r, y - 8, x + r, y - 8, x, y + r + 16, fill="#ec244d", outline="#8c1730", width=2, tags=(etiqueta,))
+        pulso = 1 + 0.08 * math.sin(self.fase / 4); r = 31 * pulso
+        c.create_oval(x-r, y-r, x, y, fill="#ec244d", outline="#8c1730", width=2, tags=(etiqueta,)); c.create_oval(x, y-r, x+r, y, fill="#ec244d", outline="#8c1730", width=2, tags=(etiqueta,)); c.create_polygon(x-r, y-8, x+r, y-8, x, y+r+16, fill="#ec244d", outline="#8c1730", width=2, tags=(etiqueta,))
 
     def _observador(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
-        c.create_oval(x - 64, y - 18, x + 64, y + 22, fill="#b8c9e5", outline="", tags=(etiqueta,))
-        c.create_oval(x - 35, y - 30, x + 6, y + 11, fill="#f0e6e6", outline="#9d9ab0", tags=(etiqueta,))
-        c.create_arc(x - 40, y - 22, x - 18, y - 7, start=200, extent=130, style="arc", outline="#5d5c78", width=2, tags=(etiqueta,))
-        c.create_line(x + 2, y - 4, x + 45, y + 4, fill="#f0e6e6", width=16, capstyle="round", tags=(etiqueta,))
-        c.create_arc(x - 77, y - 4, x - 8, y + 30, start=180, extent=180, fill="#d7e2f4", outline="", tags=(etiqueta,))
-        c.create_arc(x + 3, y - 5, x + 77, y + 31, start=180, extent=180, fill="#d7e2f4", outline="", tags=(etiqueta,))
+        c.create_oval(x-64, y-18, x+64, y+22, fill="#b8c9e5", outline="", tags=(etiqueta,)); c.create_oval(x-35, y-30, x+6, y+11, fill="#f0e6e6", outline="#9d9ab0", tags=(etiqueta,)); c.create_arc(x-40, y-22, x-18, y-7, start=200, extent=130, style="arc", outline="#5d5c78", width=2, tags=(etiqueta,)); c.create_line(x+2, y-4, x+45, y+4, fill="#f0e6e6", width=16, capstyle="round", tags=(etiqueta,)); c.create_arc(x-77, y-4, x-8, y+30, start=180, extent=180, fill="#d7e2f4", outline="", tags=(etiqueta,)); c.create_arc(x+3, y-5, x+77, y+31, start=180, extent=180, fill="#d7e2f4", outline="", tags=(etiqueta,))
 
     def _caballero(self, c: tk.Canvas, x: float, y: float, etiqueta: str, claro: bool = False, espada: bool = False) -> None:
         metal = "#dcecff" if claro else "#53657d"; sombra = "#8aa0bc" if claro else "#26384f"
-        c.create_oval(x - 14, y - 42, x + 14, y - 14, fill=metal, outline=sombra, width=2, tags=(etiqueta,))
-        c.create_rectangle(x - 20, y - 14, x + 20, y + 31, fill=metal, outline=sombra, width=2, tags=(etiqueta,))
-        c.create_line(x - 20, y + 31, x - 15, y + 50, fill=sombra, width=7, tags=(etiqueta,)); c.create_line(x + 20, y + 31, x + 15, y + 50, fill=sombra, width=7, tags=(etiqueta,))
-        c.create_line(x - 10, y - 29, x + 10, y - 29, fill="#111827", width=5, tags=(etiqueta,))
+        c.create_oval(x-14, y-42, x+14, y-14, fill=metal, outline=sombra, width=2, tags=(etiqueta,)); c.create_rectangle(x-20, y-14, x+20, y+31, fill=metal, outline=sombra, width=2, tags=(etiqueta,)); c.create_line(x-20, y+31, x-15, y+50, fill=sombra, width=7, tags=(etiqueta,)); c.create_line(x+20, y+31, x+15, y+50, fill=sombra, width=7, tags=(etiqueta,)); c.create_line(x-10, y-29, x+10, y-29, fill="#111827", width=5, tags=(etiqueta,))
         if espada:
-            c.create_line(x + 22, y - 5, x + 48, y - 56, fill="#ecf4ff", width=4, tags=(etiqueta,))
-            c.create_line(x + 14, y - 15, x + 32, y - 6, fill="#d6b35f", width=5, tags=(etiqueta,))
+            c.create_line(x+22, y-5, x+48, y-56, fill="#ecf4ff", width=4, tags=(etiqueta,)); c.create_line(x+14, y-15, x+32, y-6, fill="#d6b35f", width=5, tags=(etiqueta,))
 
     def dibujar(self) -> None:
-        c = self.lienzo; c.delete("all")
-        c.create_rectangle(0, 0, max(c.winfo_width(), 1), max(c.winfo_height(), 1), fill=COLORES["panel"], outline="")
-        c.create_text(20, 20, anchor="w", text="CIUDAD ESTABLE", fill=COLORES["suave"], font=("Helvetica", 10, "bold"))
+        c = self.lienzo; c.delete("all"); c.create_rectangle(0, 0, max(c.winfo_width(), 1), max(c.winfo_height(), 1), fill=COLORES["panel"], outline=""); c.create_text(20, 20, anchor="w", text="CIUDAD ESTABLE", fill=COLORES["suave"], font=("Helvetica", 10, "bold"))
         for origen, destino, etiqueta in self.ciudad.rutas:
-            x1, y1 = self.punto(origen); x2, y2 = self.punto(destino)
-            c.create_line(x1, y1, x2, y2, fill=COLORES["ruta"], width=3, dash=(5, 4)); self._etiqueta(c, (x1+x2)/2, (y1+y2)/2-10, etiqueta, COLORES["suave"], f"ruta:{etiqueta}")
+            x1, y1 = self.punto(origen); x2, y2 = self.punto(destino); c.create_line(x1, y1, x2, y2, fill=COLORES["ruta"], width=3, dash=(5, 4)); self._etiqueta(c, (x1+x2)/2, (y1+y2)/2-10, etiqueta, COLORES["suave"], f"ruta:{etiqueta}")
         edificios = {"biblioteca": "Biblioteca", "archivo": "Archivo", "corazon": "Corazón", "calles": "Calles", "portal": "Portal\nUniversos"}
         for lugar, texto in edificios.items():
-            x, y = self.punto(lugar); color = COLORES[lugar]; ancho, alto = (115, 64) if lugar != "portal" else (105, 58)
-            c.create_rectangle(x-ancho/2, y-alto/2, x+ancho/2, y+alto/2, fill=color, outline="", tags=(f"lugar:{lugar}",)); c.create_text(x, y, text=texto, fill="#07111d", font=("Helvetica", 10, "bold"), tags=(f"lugar:{lugar}",))
+            x, y = self.punto(lugar); color = COLORES[lugar]; ancho, alto = (115, 64) if lugar != "portal" else (105, 58); c.create_rectangle(x-ancho/2, y-alto/2, x+ancho/2, y+alto/2, fill=color, outline="", tags=(f"lugar:{lugar}",)); c.create_text(x, y, text=texto, fill="#07111d", font=("Helvetica", 10, "bold"), tags=(f"lugar:{lugar}",))
         x, y = self.punto("observacion"); self._observador(c, x, y, "actor:Observador"); self._etiqueta(c, x, y+38, "Observador", COLORES["texto"], "actor:Observador")
         x, y = self.punto("guardia"); self._caballero(c, x, y, "actor:Centinela", claro=True, espada=True); self._etiqueta(c, x, y+60, "Centinela", COLORES["texto"], "actor:Centinela")
         x, y = self.punto("corazon"); self._corazon(c, x, y, "actor:Corazón"); self._etiqueta(c, x, y+56, "Corazón", COLORES["texto"], "actor:Corazón")
         x, y = self.punto(self.ciudad.habitantes["Biblioteca"].lugar); self._bibliotecaria(c, x-27, y+51, "actor:Biblioteca"); self._etiqueta(c, x-27, y+88, "Biblioteca", COLORES["texto"], "actor:Biblioteca")
         x, y = self.punto("archivo"); self._caballero(c, x, y+26, "actor:Catalogador"); self._etiqueta(c, x, y+88, "Catalogador", COLORES["texto"], "actor:Catalogador")
-        x, y = self.punto(self.ciudad.habitantes["Curiosidad"].lugar); c.create_oval(x+16, y+39, x+36, y+59, fill="#f8fbff", outline="#07111d", width=2, tags=("actor:Curiosidad",)); self._etiqueta(c, x+26, y+72, "Curiosidad", COLORES["texto"], "actor:Curiosidad")
+        x, y = self.punto(self.ciudad.habitantes["Curiosidad"].lugar); self._curiosidad(c, x+31, y+51, "actor:Curiosidad"); self._etiqueta(c, x+31, y+88, "Curiosidad", COLORES["texto"], "actor:Curiosidad")
         x, y = self.punto("calles"); c.create_oval(x-11, y+38, x+11, y+60, fill="#43d6b4", outline="#07111d", width=2, tags=("actor:Calles",)); self._etiqueta(c, x, y+73, "Calles", COLORES["texto"], "actor:Calles")
-        for nombre in self.ciudad.habitantes:
-            c.tag_bind(f"actor:{nombre}", "<Button-1>", lambda _, n=nombre: self.mostrar_habitante(n))
+        for nombre in self.ciudad.habitantes: c.tag_bind(f"actor:{nombre}", "<Button-1>", lambda _, n=nombre: self.mostrar_habitante(n))
 
     def pulso(self) -> None:
         self.ciudad.pulso_demo(); self.actualizar()
@@ -125,14 +123,12 @@ class VentanaCiudad:
         self.fase += 1; self.dibujar(); self.raiz.after(180, self.animar)
 
     def mostrar_habitante(self, nombre: str) -> None:
-        ficha = self.ciudad.ficha(nombre)
-        self.inspector.configure(text=f"{ficha['nombre']}\n\nLugar: {ficha['lugar']}\nEstado: {ficha['estado']}\n\n{ficha['actividad']}")
+        ficha = self.ciudad.ficha(nombre); self.inspector.configure(text=f"{ficha['nombre']}\n\nLugar: {ficha['lugar']}\nEstado: {ficha['estado']}\n\n{ficha['actividad']}")
 
     def seleccionar_evento(self, _: object) -> None:
         seleccion = self.actividad.curselection()
         if not seleccion: return
-        evento = list(reversed(self.ciudad.eventos[-14:]))[seleccion[0]]
-        self.inspector.configure(text=f"{evento.tipo.upper()}\n\n{evento.actor}\n{evento.detalle}\n\n{evento.momento}")
+        evento = list(reversed(self.ciudad.eventos[-14:]))[seleccion[0]]; self.inspector.configure(text=f"{evento.tipo.upper()}\n\n{evento.actor}\n{evento.detalle}\n\n{evento.momento}")
 
 
 def main() -> None:

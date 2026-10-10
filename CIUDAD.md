@@ -9,6 +9,7 @@ python mundo.py
 ## Habitantes visibles
 
 - **Biblioteca:** bibliotecaria de pelo negro, ojos verdes y vestido rojo.
+- **Curiosidad:** exploradora luminosa no humana: un ojo solar de pensamiento, una interrogación que orbita y chispas de ideas que cambian de posición.
 - **Observador:** figura pálida que duerme muy alto entre nubes; se muestra con un velo de nubes y sin detalle explícito.
 - **Corazón:** corazón gigante rojo con pulsación visible.
 - **Catalogador:** figura alta, totalmente cubierta por armadura oscura.
