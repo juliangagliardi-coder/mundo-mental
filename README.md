@@ -1,18 +1,17 @@
 # Mundo Mental
 
-Un experimento para construir un **palacio mental modular** que pueda recordar, investigar, ampliar su estructura y recuperarse sin destruir lo aprendido.
-
-Esta versión es pequeña y genérica. Trabaja con patrones simples para demostrar los mecanismos fundamentales.
+Un experimento para construir un **palacio mental modular** cuyos Aspectos puedan recordar, investigar, construir, relacionarse y recuperarse sin perder su identidad.
 
 ## Arquitectura actual
 
 - **Biblioteca 0.2:** memoria episódica, semántica, procedimental y urbanística.
 - **Corazón 0.1:** reformas candidatas, inspección y protección de conocimientos.
 - **Calles 0.1:** mensajes tipados entre componentes.
-- **Curiosidad 0.3-plan:** Aspecto interno que gobernará experimentos y preguntas propias.
-- **Observación 0.3-plan:** supervisor independiente con eventos, cuarentena, parada y rollback.
+- **Curiosidad planificada:** Aspecto interno de la Biblioteca, con preguntas y experimentos propios.
+- **Observación reactiva planificada:** Guardián dormido, Centinela mínimo, alarmas universales y recuperación selectiva.
+- **Viabilidad 0.1:** línea base reproducible de rendimiento; mide sin optimizar.
 
-Consulta [BIBLIOTECA.md](BIBLIOTECA.md), [CURIOSIDAD.md](CURIOSIDAD.md), [OBSERVACION.md](OBSERVACION.md), [CONSTITUCION.md](CONSTITUCION.md) y [DECISIONES.md](DECISIONES.md).
+Consulta [BIBLIOTECA.md](BIBLIOTECA.md), [CURIOSIDAD.md](CURIOSIDAD.md), [OBSERVACION.md](OBSERVACION.md), [IDENTIDAD.md](IDENTIDAD.md), [VIABILIDAD.md](VIABILIDAD.md), [CONSTITUCION.md](CONSTITUCION.md) y [DECISIONES.md](DECISIONES.md).
 
 ## Probarlo
 
@@ -25,6 +24,18 @@ python -m unittest discover -s tests -v
 
 La demostración crea `.mente/` con memoria local. Esa historia no se sube a GitHub.
 
+## Medir viabilidad
+
+```bash
+python benchmarks/viabilidad_01.py --sizes 100 1000 --output viabilidad.json
+```
+
+Para una exploración deliberadamente exigente pueden añadirse tamaños mayores. Los resultados dependen de la máquina y no representan inteligencia ni velocidad humana; comparan versiones del mismo Palacio bajo la misma carga.
+
+## Pacto de evolución
+
+Medir, perfilar y detectar problemas está permitido. Antes de implementar cualquier optimización, complejización, modificación de personalidad, cambio de autoridad o alteración de relaciones entre Aspectos se presentará una propuesta al creador. La eficiencia no borrará la personificación: cada Aspecto conservará identidad, perspectiva, principios y memoria de sí.
+
 ## Estado honesto
 
-Biblioteca, Corazón, Calles y la Casa de patrones tienen un primer prototipo ejecutable. Curiosidad y Observación están diseñadas, pero todavía no implementadas. El próximo incremento construirá primero el contrato de eventos y Observación mínima; solo entonces se ampliará la autonomía ejecutable de Curiosidad.
+Biblioteca, Corazón, Calles y la Casa de Patrones tienen un prototipo ejecutable. Curiosidad, Guardián y Centinela siguen diseñados pero no implementados. Viabilidad 0.1 establece primero una línea base; sus mediciones servirán para proponer cambios concretos, no para introducirlos sin consulta.

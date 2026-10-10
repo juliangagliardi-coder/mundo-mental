@@ -10,24 +10,36 @@ Curiosidad es un Aspecto dentro de la Biblioteca y contiene un Micro-Corazón li
 
 ## ADR-003: Vida continua por ciclos
 
-El Palacio se ejecutará como servicio persistente, pero cada actividad será un ciclo finito, presupuestado, registrado y recuperable.
+El Palacio se ejecutará como servicio persistente, pero cada actividad será un ciclo finito, presupuestado y recuperable.
 
-## ADR-004: Observación independiente
+## ADR-004: Observación reactiva
 
-Observación es un Aspecto de primer nivel y un plano de seguridad separado. Recibe eventos de todos los Aspectos, controla cuarentena, copias y rollback, y puede ordenar la parada absoluta mediante un supervisor externo.
+Observación es un Aspecto independiente compuesto operativamente por un Guardián que normalmente duerme y un Centinela mínimo siempre activo. El Guardián analiza incidentes cerrados; el Centinela comprueba alarmas, latidos, límites y zonas prohibidas.
 
-## ADR-005: Libertad proporcional a observabilidad
+## ADR-005: Derecho universal de alarma
 
-Curiosidad obtiene mayor libertad únicamente cuando sus acciones son aislables, observables y reversibles. La autonomía no incluye modificar al supervisor, la Constitución, las pruebas protegidas ni los permisos máximos.
+Todo Aspecto puede despertar al Guardián sin autorización de otro Aspecto. La alarma puede solicitar aislamiento o congelación, pero no utilizarse para ordenar acciones arbitrarias.
 
-## ADR-006: Percepción total como propiedad comprobable
+## ADR-006: Fronteras, no pensamientos
 
-No se afirmará omnisciencia. "Total" significa que toda acción válida atraviesa un punto instrumentado y emite un evento previo. La cobertura se comprueba mediante pruebas, eventos señuelo, secuencias y política de fallo seguro.
+Observación protege efectos persistentes, cruces entre Aspectos, acciones externas, permisos y promociones. No autoriza cada inferencia ni registra exhaustivamente cada operación interna.
 
-## ADR-007: El tiempo no se borra
+## ADR-007: Copia por sesión mutable
 
-Un rollback restaura el estado del Palacio a un checkpoint, pero conserva la cronología y evidencia del incidente en un registro separado e inmutable.
+Antes de abrir una zona estable se crea una base recuperable y la sesión trabaja en una rama. Se almacenan diferencias y versiones; no se realiza una copia completa por mutación.
 
-## ADR-008: Prevención antes que reparación
+## ADR-008: El tiempo no se borra
 
-Las candidatas permanecen en cuarentena durante el margen que Observación necesita para revisarlas. La restauración se reserva para fallos que hayan cruzado defensas anteriores.
+Un rollback restaura estado, pero conserva la cronología y evidencia del incidente en un registro separado.
+
+## ADR-009: Identidad protegida
+
+Los Aspectos son entidades arquitectónicas y narrativas: tienen función, perspectiva, principios, relaciones y memoria de sí. Una optimización no puede reducirlos silenciosamente a utilidades intercambiables.
+
+## ADR-010: Consulta antes de cambiar
+
+Viabilidad puede medir y descubrir problemas sin autorización adicional. Toda optimización, complejización, cambio de personalidad, reparto de autoridad o alteración de relaciones se presenta al creador antes de implementarse.
+
+## ADR-011: Viabilidad antes de autonomía
+
+Antes de implementar Curiosidad autónoma u Observación ejecutable se crea una línea base reproducible de tiempo, memoria y crecimiento. Viabilidad 0.1 diagnostica; no optimiza el Palacio.

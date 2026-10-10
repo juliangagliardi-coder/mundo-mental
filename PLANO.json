@@ -1,18 +1,28 @@
 {
-  "version": "0.3.0-plan",
+  "version": "0.4.0-plan",
   "nombre": "Palacio Mental",
+  "principios": [
+    "identidad_de_aspectos_protegida",
+    "consulta_antes_de_optimizar_o_complejizar",
+    "medir_antes_de_cambiar"
+  ],
   "aspectos": [
     {
       "id": "observacion",
-      "version": "0.1.0-plan",
+      "nombre": "Observación",
+      "version": "0.2.0-plan",
       "nivel": "supervision_independiente",
-      "responsabilidad": "Observar eventos, aplicar políticas, congelar el Palacio y gestionar checkpoints y rollback",
+      "identidad": "Presencia serena que conserva la historia y despierta cuando el Palacio necesita protección",
+      "responsabilidad": "Atender alarmas, analizar incidentes cerrados, congelar fronteras y gestionar recuperación",
       "estado": "planificado",
-      "autoridad": ["denegar", "limitar", "aislar", "congelar", "restaurar"]
+      "componentes_operativos": ["guardian", "centinela"],
+      "autoridad": ["aislar", "congelar", "restaurar", "pedir_revision_humana"]
     },
     {
       "id": "biblioteca",
+      "nombre": "Biblioteca",
       "version": "0.2.0",
+      "identidad": "Custodia viva de experiencias, conocimientos, habilidades e historia del Palacio",
       "responsabilidad": "Recordar episodios, consolidar conceptos, versionar habilidades y archivar obras",
       "estado": "activo",
       "salas": ["episodica", "semantica", "procedimental", "urbanistica"],
@@ -20,22 +30,28 @@
     },
     {
       "id": "curiosidad",
+      "nombre": "Curiosidad",
       "version": "0.1.0-plan",
       "padre": "biblioteca",
+      "identidad": "Libertad investigadora que transforma vacíos de conocimiento en preguntas propias",
       "responsabilidad": "Formular preguntas, gobernar el laboratorio y proponer mejoras",
       "estado": "planificado",
       "contiene": ["micro_corazon"]
     },
     {
       "id": "corazon",
+      "nombre": "Corazón",
       "version": "0.1.0",
+      "identidad": "Voluntad constructora que convierte necesidades demostradas en reformas prudentes",
       "responsabilidad": "Diagnosticar, proponer, inspeccionar y consolidar ampliaciones",
       "estado": "activo"
     },
     {
       "id": "calles",
+      "nombre": "Calles",
       "version": "0.1.0",
-      "responsabilidad": "Transportar mensajes tipados y eventos entre las partes de la ciudad",
+      "identidad": "Tejido de relaciones que permite cooperar sin borrar las fronteras entre Aspectos",
+      "responsabilidad": "Transportar mensajes tipados entre las partes de la ciudad",
       "estado": "activo"
     }
   ],
@@ -75,20 +91,22 @@
       "mensaje": "antecedentes_urbanisticos"
     },
     {
-      "id": "todos_a_observacion",
+      "id": "alarma_universal",
       "origen": "*",
-      "destino": "observacion",
-      "mensaje": "evento_previo_y_resultado",
-      "obligatoria": true
+      "destino": "observacion.guardian",
+      "mensaje": "alarma_y_evidencias",
+      "protegida": true,
+      "prioridad": "absoluta"
     },
     {
-      "id": "observacion_a_todos",
-      "origen": "observacion",
+      "id": "guardian_a_todos",
+      "origen": "observacion.guardian",
       "destino": "*",
-      "mensaje": "decision_de_seguridad",
+      "mensaje": "aislar_congelar_o_reanudar",
       "prioridad": "absoluta"
     }
   ],
+  "zonas": ["temporal", "laboratorio", "persistente", "estable", "constitucional"],
   "estados_globales": ["despierto", "reposo", "sueno", "cuarentena", "pausa", "alarma"],
-  "regla_fallo": "Si Observación pierde visibilidad o integridad, toda nueva mutación se deniega"
+  "regla_fallo": "Si un Aspecto no puede reparar un problema puede despertar al Guardián; el Centinela cubre fallos de cooperación o disponibilidad"
 }
