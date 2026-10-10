@@ -12,23 +12,27 @@ class PruebasMundoVirtual(unittest.TestCase):
             self.assertTrue(0 <= ser.x <= mundo.ANCHO)
             self.assertTrue(0 <= ser.y <= mundo.ALTO)
 
-    def test_movimiento_actualiza_posicion_y_deja_traza(self):
+    def test_movimiento_del_jugador_respeta_fronteras(self):
         mundo = MundoVirtual()
-        evento = mundo.mover("Curiosidad", 1400, 650, "Camina hacia la puerta")
-        self.assertEqual((mundo.seres["Curiosidad"].x, mundo.seres["Curiosidad"].y), (1400, 650))
-        self.assertEqual(evento.tipo, "movimiento")
+        self.assertFalse(mundo.mover_jugador(-500, 0))
+        self.assertEqual((mundo.jugador.x, mundo.jugador.y), (175, 600))
+        self.assertTrue(mundo.mover_jugador(25, 0))
 
-    def test_no_se_puede_salir_del_mundo(self):
+    def test_recoger_y_entregar_brasas_completa_aventura(self):
         mundo = MundoVirtual()
-        with self.assertRaises(ValueError):
-            mundo.mover("Curiosidad", mundo.ANCHO + 1, 100, "Cruza el límite")
+        for x, y in mundo.BRASAS:
+            mundo.jugador.x, mundo.jugador.y = x, y
+            mundo._recoger_brasas()
+        self.assertEqual(mundo.jugador.brasas, 3)
+        mundo.jugador.x, mundo.jugador.y = mundo.DESTINO_RITUAL
+        evento = mundo.interactuar()
+        self.assertTrue(mundo.mision_completada)
+        self.assertEqual(evento.tipo, "ritual")
 
-    def test_escena_llegada_reune_a_los_protagonistas_sin_memoria(self):
+    def test_interactuar_con_habitante_deja_dialogo(self):
         mundo = MundoVirtual()
-        eventos = mundo.escena_llegada()
-        self.assertEqual([evento.tipo for evento in eventos], ["movimiento", "ceremonia", "movimiento", "vigilancia"])
-        self.assertTrue(mundo.escena_inicial_vista)
-        self.assertEqual((mundo.seres["Curiosidad"].x, mundo.seres["Curiosidad"].y), (765, 590))
+        mundo.jugador.x, mundo.jugador.y = mundo.seres["Biblioteca"].x, mundo.seres["Biblioteca"].y
+        self.assertEqual(mundo.interactuar().tipo, "dialogo")
 
     def test_pulso_cuenta_una_historia_en_el_terreno(self):
         mundo = MundoVirtual()

@@ -1,25 +1,28 @@
-# Mundo Virtual 0.1
+# Mundo Mental: el juego
 
-Abre el mundo con:
+Ejecuta el reino local con:
 
 ```bash
 python mundo.py
 ```
 
-Es el primer terreno físico de Mundo Mental: un reino medieval fantástico local, con bosque, río, caminos de adoquines, casas, una puerta de madera y habitantes con coordenadas reales dentro del mundo.
+## Aventura inicial: Las tres brasas
 
-## Primera llegada
-
-Al entrar, aparece una escena breve y silenciosa bajo el Corazón: Curiosidad sale de los árboles, Biblioteca la recibe, Catalogador acerca un libro aún vacío y Centinela mantiene la guardia bajo el Observador. Es una presentación visual: no registra conocimiento ni concede permisos. Puede repetirse desde **Repetir llegada**.
+El jugador entra al reino como un viajero. Centinela propone una misión: reunir tres **brasas de asombro** escondidas en el bosque y llevarlas al Corazón. Esta misión es una aventura visual local; no concede permisos ni escribe memoria del sistema.
 
 ## Controles
 
-- Arrastra con botón derecho para mover la cámara.
-- Usa las flechas para recorrer el mapa.
-- Usa la rueda del ratón para acercar o alejar.
-- Haz clic en un habitante para inspeccionar posición, estado y actividad.
-- Pulsa **Pulso de vida** para observar a Curiosidad formular una pregunta y caminar hacia la puerta.
+- **WASD** o **flechas**: caminar.
+- **E** o **Espacio**: interactuar con habitantes, recoger la conclusión del ritual o escuchar el entorno.
+- Arrastra con botón derecho: mover cámara.
+- Rueda del ratón: acercar o alejar.
+- **Pulso de vida**: observar el pulso demostrativo de los Aspectos.
 
-## Fronteras
+## Objetivo
 
-La ciudad es el mundo estable. La puerta conduce a futuros **Universos de Experimentación**, espacios separados que se crearán por necesidad y requerirán autorización de Curiosidad. El terreno no concede permisos ni convierte la ciudad estable en un laboratorio.
+1. Explora los caminos y bordes del bosque.
+2. Encuentra las tres luces doradas.
+3. Llega al Corazón con las tres brasas.
+4. Pulsa **E** para encender el ritual.
+
+El río y los bordes del mapa bloquean el paso. Haz clic en cualquier habitante para ver su estado y actividad.
