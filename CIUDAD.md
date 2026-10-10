@@ -1,23 +1,5 @@
 # Ciudad Mental visual
 
-Abre la ciudad con:
+La interfaz ahora se implementa como el **Mundo Virtual 0.1**. Consulta [MUNDO.md](MUNDO.md) para abrir y recorrer el reino medieval fantástico con `python mundo.py`.
 
-```bash
-python mundo.py
-```
-
-## Espacio visible
-
-- **Calles:** vías de adoquines que conectan los lugares declarados de la ciudad; no son un personaje.
-- **Puerta a Universos:** una puerta de madera simple. Lleva únicamente a Universos de Experimentación separados y autorizados por Curiosidad.
-
-## Habitantes visibles
-
-- **Biblioteca:** bibliotecaria de pelo negro, ojos verdes y vestido rojo.
-- **Curiosidad:** exploradora luminosa no humana: un ojo solar de pensamiento, una interrogación que orbita y chispas de ideas que cambian de posición.
-- **Observador:** figura pálida que duerme muy alto entre nubes; se muestra con un velo de nubes y sin detalle explícito.
-- **Corazón:** corazón gigante rojo con pulsación visible.
-- **Catalogador:** figura alta, totalmente cubierta por armadura oscura.
-- **Centinela:** caballero de armadura más clara, en guardia y con espada bajo el Observador.
-
-Cada habitante se puede seleccionar para ver su estado y actividad. Las apariencias representan presencia visual; no amplían la autoridad de ningún Aspecto.
+El prototipo anterior de mapa simbólico fue reemplazado por terreno, posiciones físicas, movimiento y cámara. La Ciudad estable conserva su frontera: los experimentos futuros ocurrirán solamente tras la puerta, en Universos de Experimentación autorizados.

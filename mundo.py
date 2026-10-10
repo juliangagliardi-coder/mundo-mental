@@ -1,6 +1,7 @@
-"""Visor gráfico local de la Ciudad Mental.
+"""Mundo Mental: mundo virtual medieval fantástico.
 
-Ejecutar: python mundo.py
+Abrir con: python mundo.py
+Mover cámara: arrastrar con botón derecho o usar flechas. Rueda: zoom.
 """
 
 from __future__ import annotations
@@ -9,97 +10,107 @@ import math
 import tkinter as tk
 from tkinter import ttk
 
-from mundo_mental.ciudad import CiudadMental
+from mundo_mental.mundo_virtual import MundoVirtual
 
 
-COLORES = {
-    "fondo": "#0b1020", "panel": "#131b33", "texto": "#e7edf9", "suave": "#9eb0d0",
-    "biblioteca": "#4f8cff", "corazon": "#f06d8f", "observacion": "#b98cff", "archivo": "#8eb6a5",
-    "guardia": "#d7e8ff", "calles": "#7a879b", "portal": "#9c633f", "ruta": "#465775", "alerta": "#ff6b6b",
-}
-
-
-class VentanaCiudad:
+class VentanaMundo:
     def __init__(self, raiz: tk.Tk):
-        self.raiz = raiz; self.ciudad = CiudadMental(); self.fase = 0
-        raiz.title("Mundo Mental · Ciudad viva"); raiz.geometry("1120x720"); raiz.minsize(940, 600); raiz.configure(bg=COLORES["fondo"])
-        self._construir(); self.actualizar(); self.animar()
+        self.raiz = raiz; self.mundo = MundoVirtual(); self.zoom = .72; self.dx = 70; self.dy = 70; self.fase = 0; self.arrastre = None
+        raiz.title("Mundo Mental · Reino vivo"); raiz.geometry("1240x780"); raiz.minsize(980, 640); raiz.configure(bg="#101523")
+        self._interfaz(); self.actualizar(); self.animar()
 
-    def _construir(self) -> None:
-        encabezado = tk.Frame(self.raiz, bg=COLORES["fondo"]); encabezado.pack(fill="x", padx=22, pady=(18, 8))
-        tk.Label(encabezado, text="MUNDO MENTAL", font=("Helvetica", 20, "bold"), fg=COLORES["texto"], bg=COLORES["fondo"]).pack(side="left")
-        tk.Label(encabezado, text="Ciudad estable · Universos de Experimentación separados", font=("Helvetica", 10), fg=COLORES["suave"], bg=COLORES["fondo"]).pack(side="left", padx=14, pady=6)
-        ttk.Button(encabezado, text="Simular pulso", command=self.pulso).pack(side="right")
-        cuerpo = tk.PanedWindow(self.raiz, orient="horizontal", sashwidth=6, bg=COLORES["fondo"], bd=0); cuerpo.pack(fill="both", expand=True, padx=20, pady=(0, 20))
-        mapa = tk.Frame(cuerpo, bg=COLORES["panel"]); lateral = tk.Frame(cuerpo, bg=COLORES["panel"], width=330); cuerpo.add(mapa, stretch="always"); cuerpo.add(lateral, minsize=280)
-        self.lienzo = tk.Canvas(mapa, bg=COLORES["panel"], highlightthickness=0); self.lienzo.pack(fill="both", expand=True, padx=8, pady=8); self.lienzo.bind("<Configure>", lambda _: self.dibujar())
-        tk.Label(lateral, text="Actividad en tiempo real", font=("Helvetica", 13, "bold"), fg=COLORES["texto"], bg=COLORES["panel"]).pack(anchor="w", padx=16, pady=(16, 8))
-        self.actividad = tk.Listbox(lateral, bg="#0e1529", fg=COLORES["texto"], selectbackground="#2f477b", borderwidth=0, highlightthickness=0, font=("Helvetica", 9)); self.actividad.pack(fill="both", expand=True, padx=16, pady=(0, 12)); self.actividad.bind("<<ListboxSelect>>", self.seleccionar_evento)
-        self.inspector = tk.Label(lateral, text="Selecciona un habitante o evento.", justify="left", anchor="nw", wraplength=290, fg=COLORES["suave"], bg=COLORES["panel"], font=("Helvetica", 10)); self.inspector.pack(fill="x", padx=16, pady=(0, 16))
+    def _interfaz(self) -> None:
+        barra = tk.Frame(self.raiz, bg="#101523"); barra.pack(fill="x", padx=20, pady=(16,8))
+        tk.Label(barra, text="MUNDO MENTAL", font=("Georgia",21,"bold"), fg="#f5e6bd", bg="#101523").pack(side="left")
+        tk.Label(barra, text="Reino medieval fantástico · Ciudad estable", font=("Helvetica",10), fg="#aebbd1", bg="#101523").pack(side="left",padx=14)
+        ttk.Button(barra,text="Pulso de vida",command=self.pulso).pack(side="right")
+        cuerpo=tk.PanedWindow(self.raiz,orient="horizontal",sashwidth=6,bg="#101523",bd=0); cuerpo.pack(fill="both",expand=True,padx=18,pady=(0,18))
+        mapa=tk.Frame(cuerpo,bg="#172238"); panel=tk.Frame(cuerpo,bg="#172238",width=335); cuerpo.add(mapa,stretch="always"); cuerpo.add(panel,minsize=290)
+        self.canvas=tk.Canvas(mapa,bg="#172238",highlightthickness=0); self.canvas.pack(fill="both",expand=True,padx=8,pady=8)
+        self.canvas.bind("<ButtonPress-3>",self.iniciar_arrastre); self.canvas.bind("<B3-Motion>",self.arrastrar); self.canvas.bind("<MouseWheel>",self.zoom_raton); self.canvas.bind("<Button-4>",lambda e:self.cambiar_zoom(1.1)); self.canvas.bind("<Button-5>",lambda e:self.cambiar_zoom(.9)); self.canvas.bind("<Configure>",lambda e:self.dibujar())
+        self.raiz.bind("<Left>",lambda e:self.desplazar(40,0)); self.raiz.bind("<Right>",lambda e:self.desplazar(-40,0)); self.raiz.bind("<Up>",lambda e:self.desplazar(0,40)); self.raiz.bind("<Down>",lambda e:self.desplazar(0,-40))
+        tk.Label(panel,text="Crónica del reino",font=("Georgia",14,"bold"),fg="#f5e6bd",bg="#172238").pack(anchor="w",padx=16,pady=(16,8))
+        self.cronica=tk.Listbox(panel,bg="#101827",fg="#e7edf9",selectbackground="#405d8f",borderwidth=0,highlightthickness=0,font=("Helvetica",9)); self.cronica.pack(fill="both",expand=True,padx=16,pady=(0,12)); self.cronica.bind("<<ListboxSelect>>",self.seleccionar)
+        self.ficha=tk.Label(panel,text="Explora el mundo y selecciona un habitante.",justify="left",anchor="nw",wraplength=290,fg="#afbed7",bg="#172238",font=("Helvetica",10)); self.ficha.pack(fill="x",padx=16,pady=(0,16))
 
-    def escala(self) -> tuple[float, float]: return max(self.lienzo.winfo_width()/760, .65), max(self.lienzo.winfo_height()/510, .65)
-    def punto(self, lugar: str) -> tuple[float, float]:
-        sx, sy = self.escala(); x, y = self.ciudad.LUGARES[lugar]; return x*sx, y*sy
-    def _etiqueta(self, c: tk.Canvas, x: float, y: float, texto: str, color: str, etiqueta: str) -> None: c.create_text(x, y, text=texto, fill=color, font=("Helvetica", 8, "bold"), tags=(etiqueta,))
+    def pantalla(self,x:float,y:float)->tuple[float,float]: return x*self.zoom+self.dx,y*self.zoom+self.dy
+    def iniciar_arrastre(self,e:tk.Event)->None: self.arrastre=(e.x,e.y)
+    def arrastrar(self,e:tk.Event)->None:
+        if self.arrastre: self.dx+=e.x-self.arrastre[0]; self.dy+=e.y-self.arrastre[1]; self.arrastre=(e.x,e.y); self.dibujar()
+    def desplazar(self,x:int,y:int)->None: self.dx+=x; self.dy+=y; self.dibujar()
+    def zoom_raton(self,e:tk.Event)->None: self.cambiar_zoom(1.1 if e.delta>0 else .9)
+    def cambiar_zoom(self,factor:float)->None: self.zoom=max(.38,min(1.45,self.zoom*factor)); self.dibujar()
+    def poligono(self,puntos:list[tuple[float,float]])->list[float]: return [v for punto in puntos for v in punto]
 
-    def _calle(self, c: tk.Canvas, x1: float, y1: float, x2: float, y2: float, etiqueta: str) -> None:
-        c.create_line(x1, y1, x2, y2, fill="#252f45", width=15, capstyle="round", tags=(etiqueta,)); c.create_line(x1, y1, x2, y2, fill=COLORES["calles"], width=10, capstyle="round", tags=(etiqueta,))
-        distancia = max(1, int(math.hypot(x2-x1, y2-y1)/15))
-        for indice in range(1, distancia):
-            proporcion = indice / distancia; x, y = x1+(x2-x1)*proporcion, y1+(y2-y1)*proporcion
-            c.create_line(x-3, y-3, x+3, y+3, fill="#aeb7c7", width=1, tags=(etiqueta,))
+    def terreno(self,c:tk.Canvas)->None:
+        w,h=max(c.winfo_width(),1),max(c.winfo_height(),1); c.create_rectangle(0,0,w,h,fill="#315a43",outline="")
+        for x in range(-100,self.mundo.ANCHO+120,120):
+            for y in range(20,self.mundo.ALTO,100):
+                sx,sy=self.pantalla(x+(y//80%2)*25,y)
+                if -20<sx<w+20 and -20<sy<h+20: c.create_oval(sx-13,sy-16,sx+13,sy+15,fill="#1f4937",outline="#163a2d")
+        rio=[]
+        for y in range(0,self.mundo.ALTO+50,50): rio.append(self.pantalla(1210+50*math.sin(y/130),y))
+        for y in range(self.mundo.ALTO,-50,-50): rio.append(self.pantalla(1320+50*math.sin(y/130),y))
+        c.create_polygon(*self.poligono(rio),fill="#4b9dc4",outline="#83d0e9",width=2)
+        for y in range(0,self.mundo.ALTO,140):
+            sx,sy=self.pantalla(1260+42*math.sin(y/130),y+60); c.create_line(sx-16,sy,sx+16,sy,fill="#b0e7f3",width=2)
 
-    def _puerta(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
-        c.create_rectangle(x-29, y-47, x+29, y+42, fill="#5a3425", outline="#2c1813", width=4, tags=(etiqueta,)); c.create_rectangle(x-23, y-42, x+23, y+38, fill="#9c633f", outline="#bd8051", width=2, tags=(etiqueta,))
-        for altura in (-22, 2, 26): c.create_line(x-21, y+altura, x+21, y+altura, fill="#70432d", width=2, tags=(etiqueta,))
-        c.create_oval(x+12, y, x+17, y+5, fill="#e4bd58", outline="#7e5c20", tags=(etiqueta,))
+    def camino(self,c:tk.Canvas)->None:
+        puntos=[self.pantalla(x,y) for x,y in self.mundo.CAMINO]; c.create_line(*self.poligono(puntos),fill="#342b27",width=33,capstyle="round",joinstyle="round"); c.create_line(*self.poligono(puntos),fill="#aa946e",width=26,capstyle="round",joinstyle="round")
+        for x,y in puntos: c.create_oval(x-5,y-5,x+5,y+5,fill="#cbb993",outline="#847254")
 
-    def _bibliotecaria(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
-        c.create_oval(x-14, y-34, x+14, y-6, fill="#f2c9b5", outline="#07111d", width=2, tags=(etiqueta,)); c.create_arc(x-17, y-40, x+17, y-5, start=180, extent=180, fill="#161420", outline="#161420", tags=(etiqueta,)); c.create_oval(x-7, y-23, x-3, y-19, fill="#54d68d", outline="", tags=(etiqueta,)); c.create_oval(x+3, y-23, x+7, y-19, fill="#54d68d", outline="", tags=(etiqueta,)); c.create_polygon(x-17, y-5, x+17, y-5, x+22, y+27, x-22, y+27, fill="#bd2448", outline="#7c1733", width=2, tags=(etiqueta,))
+    def casa(self,c:tk.Canvas,x:int,y:int,nombre:str,color:str)->None:
+        sx,sy=self.pantalla(x,y); z=self.zoom; c.create_rectangle(sx-52*z,sy-25*z,sx+52*z,sy+45*z,fill=color,outline="#392e2a",width=2); c.create_polygon(sx-63*z,sy-25*z,sx,sy-72*z,sx+63*z,sy-25*z,fill="#704736",outline="#392e2a",width=2); c.create_rectangle(sx-10*z,sy+5*z,sx+10*z,sy+45*z,fill="#4b2d22",outline="#2d1a15"); c.create_text(sx,sy+59*z,text=nombre,fill="#f5e6bd",font=("Georgia",max(8,int(10*z)),"bold"))
 
-    def _curiosidad(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
-        latido = math.sin(self.fase/5); radio = 14+2*latido; c.create_oval(x-radio-5, y-radio-5, x+radio+5, y+radio+5, fill="#2b2460", outline="#7666d9", width=2, tags=(etiqueta,)); c.create_oval(x-radio, y-radio, x+radio, y+radio, fill="#f8d75e", outline="#fff5b0", width=2, tags=(etiqueta,)); c.create_oval(x-5, y-5, x+5, y+5, fill="#151533", outline="", tags=(etiqueta,)); angulo = self.fase/6; qx, qy = x+math.cos(angulo)*29, y+math.sin(angulo)*20; c.create_text(qx, qy, text="?", fill="#b7a6ff", font=("Helvetica", 16, "bold"), tags=(etiqueta,))
-        for desfase, color in ((0,"#5ae0ff"),(2.1,"#f48cce"),(4.2,"#b7f56b")):
-            ax, ay = x+math.cos(angulo+desfase)*36, y+math.sin(angulo+desfase)*25; c.create_oval(ax-3, ay-3, ax+3, ay+3, fill=color, outline="", tags=(etiqueta,))
+    def puerta(self,c:tk.Canvas)->None:
+        x,y=self.pantalla(1450,650); z=self.zoom; c.create_rectangle(x-31*z,y-55*z,x+31*z,y+42*z,fill="#593322",outline="#24130e",width=4); c.create_rectangle(x-25*z,y-50*z,x+25*z,y+38*z,fill="#9b603b",outline="#c88954",width=2)
+        for alto in (-25,0,25): c.create_line(x-23*z,y+alto*z,x+23*z,y+alto*z,fill="#6f402b",width=2)
+        c.create_oval(x+12*z,y-2*z,x+18*z,y+4*z,fill="#e0bd59",outline="#806024"); c.create_text(x,y+60*z,text="Puerta a Universos",fill="#f5e6bd",font=("Georgia",max(8,int(10*z)),"bold"))
 
-    def _corazon(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
-        pulso = 1+.08*math.sin(self.fase/4); r = 31*pulso; c.create_oval(x-r,y-r,x,y,fill="#ec244d",outline="#8c1730",width=2,tags=(etiqueta,)); c.create_oval(x,y-r,x+r,y,fill="#ec244d",outline="#8c1730",width=2,tags=(etiqueta,)); c.create_polygon(x-r,y-8,x+r,y-8,x,y+r+16,fill="#ec244d",outline="#8c1730",width=2,tags=(etiqueta,))
-    def _observador(self, c: tk.Canvas, x: float, y: float, etiqueta: str) -> None:
-        c.create_oval(x-64,y-18,x+64,y+22,fill="#b8c9e5",outline="",tags=(etiqueta,)); c.create_oval(x-35,y-30,x+6,y+11,fill="#f0e6e6",outline="#9d9ab0",tags=(etiqueta,)); c.create_arc(x-40,y-22,x-18,y-7,start=200,extent=130,style="arc",outline="#5d5c78",width=2,tags=(etiqueta,)); c.create_line(x+2,y-4,x+45,y+4,fill="#f0e6e6",width=16,capstyle="round",tags=(etiqueta,)); c.create_arc(x-77,y-4,x-8,y+30,start=180,extent=180,fill="#d7e2f4",outline="",tags=(etiqueta,)); c.create_arc(x+3,y-5,x+77,y+31,start=180,extent=180,fill="#d7e2f4",outline="",tags=(etiqueta,))
-    def _caballero(self, c: tk.Canvas, x: float, y: float, etiqueta: str, claro: bool=False, espada: bool=False) -> None:
-        metal="#dcecff" if claro else "#53657d"; sombra="#8aa0bc" if claro else "#26384f"; c.create_oval(x-14,y-42,x+14,y-14,fill=metal,outline=sombra,width=2,tags=(etiqueta,)); c.create_rectangle(x-20,y-14,x+20,y+31,fill=metal,outline=sombra,width=2,tags=(etiqueta,)); c.create_line(x-20,y+31,x-15,y+50,fill=sombra,width=7,tags=(etiqueta,)); c.create_line(x+20,y+31,x+15,y+50,fill=sombra,width=7,tags=(etiqueta,)); c.create_line(x-10,y-29,x+10,y-29,fill="#111827",width=5,tags=(etiqueta,))
-        if espada: c.create_line(x+22,y-5,x+48,y-56,fill="#ecf4ff",width=4,tags=(etiqueta,)); c.create_line(x+14,y-15,x+32,y-6,fill="#d6b35f",width=5,tags=(etiqueta,))
+    def bibliotecaria(self,c:tk.Canvas,x:float,y:float,tag:str)->None:
+        z=self.zoom; c.create_oval(x-13*z,y-35*z,x+13*z,y-9*z,fill="#f2c9b5",outline="#17111c",width=2,tags=(tag,)); c.create_arc(x-16*z,y-41*z,x+16*z,y-8*z,start=180,extent=180,fill="#15121d",outline="#15121d",tags=(tag,)); c.create_oval(x-7*z,y-24*z,x-3*z,y-20*z,fill="#55d88d",outline="",tags=(tag,)); c.create_oval(x+3*z,y-24*z,x+7*z,y-20*z,fill="#55d88d",outline="",tags=(tag,)); c.create_polygon(x-17*z,y-8*z,x+17*z,y-8*z,x+22*z,y+28*z,x-22*z,y+28*z,fill="#b52245",outline="#71162e",width=2,tags=(tag,))
 
-    def dibujar(self) -> None:
-        c=self.lienzo; c.delete("all"); c.create_rectangle(0,0,max(c.winfo_width(),1),max(c.winfo_height(),1),fill=COLORES["panel"],outline=""); c.create_text(20,20,anchor="w",text="CIUDAD ESTABLE",fill=COLORES["suave"],font=("Helvetica",10,"bold"))
-        for origen,destino,etiqueta in self.ciudad.rutas:
-            x1,y1=self.punto(origen); x2,y2=self.punto(destino); self._calle(c,x1,y1,x2,y2,f"ruta:{etiqueta}"); self._etiqueta(c,(x1+x2)/2,(y1+y2)/2-12,etiqueta,COLORES["suave"],f"ruta:{etiqueta}")
-        edificios={"biblioteca":"Biblioteca","archivo":"Archivo","corazon":"Corazón"}
-        for lugar,texto in edificios.items():
-            x,y=self.punto(lugar); color=COLORES[lugar]; c.create_rectangle(x-57,y-32,x+57,y+32,fill=color,outline="",tags=(f"lugar:{lugar}",)); c.create_text(x,y,text=texto,fill="#07111d",font=("Helvetica",10,"bold"),tags=(f"lugar:{lugar}",))
-        x,y=self.punto("portal"); self._puerta(c,x,y,"lugar:portal"); self._etiqueta(c,x,y+59,"Puerta a Universos",COLORES["texto"],"lugar:portal")
-        x,y=self.punto("observacion"); self._observador(c,x,y,"actor:Observador"); self._etiqueta(c,x,y+38,"Observador",COLORES["texto"],"actor:Observador")
-        x,y=self.punto("guardia"); self._caballero(c,x,y,"actor:Centinela",claro=True,espada=True); self._etiqueta(c,x,y+60,"Centinela",COLORES["texto"],"actor:Centinela")
-        x,y=self.punto("corazon"); self._corazon(c,x,y,"actor:Corazón"); self._etiqueta(c,x,y+56,"Corazón",COLORES["texto"],"actor:Corazón")
-        x,y=self.punto(self.ciudad.habitantes["Biblioteca"].lugar); self._bibliotecaria(c,x-27,y+51,"actor:Biblioteca"); self._etiqueta(c,x-27,y+88,"Biblioteca",COLORES["texto"],"actor:Biblioteca")
-        x,y=self.punto("archivo"); self._caballero(c,x,y+26,"actor:Catalogador"); self._etiqueta(c,x,y+88,"Catalogador",COLORES["texto"],"actor:Catalogador")
-        x,y=self.punto(self.ciudad.habitantes["Curiosidad"].lugar); self._curiosidad(c,x+31,y+51,"actor:Curiosidad"); self._etiqueta(c,x+31,y+88,"Curiosidad",COLORES["texto"],"actor:Curiosidad")
-        for nombre in self.ciudad.habitantes: c.tag_bind(f"actor:{nombre}","<Button-1>",lambda _,n=nombre:self.mostrar_habitante(n))
-        c.tag_bind("lugar:portal","<Button-1>",lambda _:self.inspector.configure(text="PUERTA A UNIVERSOS\n\nUna puerta de madera simple. Conduce únicamente a Universos de Experimentación autorizados por Curiosidad."))
+    def curiosidad(self,c:tk.Canvas,x:float,y:float,tag:str)->None:
+        z=self.zoom; r=(15+2*math.sin(self.fase/5))*z; c.create_oval(x-r-5*z,y-r-5*z,x+r+5*z,y+r+5*z,fill="#2b2460",outline="#7666d9",width=2,tags=(tag,)); c.create_oval(x-r,y-r,x+r,y+r,fill="#f8d75e",outline="#fff5b0",width=2,tags=(tag,)); c.create_oval(x-5*z,y-5*z,x+5*z,y+5*z,fill="#151533",outline="",tags=(tag,)); a=self.fase/6; c.create_text(x+math.cos(a)*31*z,y+math.sin(a)*23*z,text="?",fill="#b7a6ff",font=("Helvetica",max(10,int(16*z)),"bold"),tags=(tag,))
 
-    def pulso(self) -> None: self.ciudad.pulso_demo(); self.actualizar()
-    def actualizar(self) -> None:
-        self.actividad.delete(0,tk.END)
-        for evento in reversed(self.ciudad.eventos[-14:]): self.actividad.insert(tk.END,f"{evento.actor}: {evento.detalle}")
+    def corazon(self,c:tk.Canvas,x:float,y:float,tag:str)->None:
+        z=self.zoom*(1+.08*math.sin(self.fase/4)); r=33*z; c.create_oval(x-r,y-r,x,y,fill="#ec244d",outline="#8c1730",width=2,tags=(tag,)); c.create_oval(x,y-r,x+r,y,fill="#ec244d",outline="#8c1730",width=2,tags=(tag,)); c.create_polygon(x-r,y-8*z,x+r,y-8*z,x,y+r+18*z,fill="#ec244d",outline="#8c1730",width=2,tags=(tag,))
+
+    def caballero(self,c:tk.Canvas,x:float,y:float,tag:str,claro:bool=False,espada:bool=False)->None:
+        z=self.zoom; metal="#dcecff" if claro else "#53657d"; sombra="#8aa0bc" if claro else "#26384f"; c.create_oval(x-14*z,y-42*z,x+14*z,y-14*z,fill=metal,outline=sombra,width=2,tags=(tag,)); c.create_rectangle(x-20*z,y-14*z,x+20*z,y+31*z,fill=metal,outline=sombra,width=2,tags=(tag,)); c.create_line(x-20*z,y+31*z,x-15*z,y+50*z,fill=sombra,width=max(2,int(7*z)),tags=(tag,)); c.create_line(x+20*z,y+31*z,x+15*z,y+50*z,fill=sombra,width=max(2,int(7*z)),tags=(tag,)); c.create_line(x-10*z,y-29*z,x+10*z,y-29*z,fill="#111827",width=max(2,int(5*z)),tags=(tag,))
+        if espada: c.create_line(x+22*z,y-5*z,x+48*z,y-56*z,fill="#ecf4ff",width=max(2,int(4*z)),tags=(tag,)); c.create_line(x+14*z,y-15*z,x+32*z,y-6*z,fill="#d6b35f",width=max(2,int(5*z)),tags=(tag,))
+
+    def observador(self,c:tk.Canvas,x:float,y:float,tag:str)->None:
+        z=self.zoom; c.create_oval(x-64*z,y-18*z,x+64*z,y+22*z,fill="#b8c9e5",outline="",tags=(tag,)); c.create_oval(x-35*z,y-30*z,x+6*z,y+11*z,fill="#f0e6e6",outline="#9d9ab0",tags=(tag,)); c.create_arc(x-40*z,y-22*z,x-18*z,y-7*z,start=200,extent=130,style="arc",outline="#5d5c78",width=2,tags=(tag,)); c.create_line(x+2*z,y-4*z,x+45*z,y+4*z,fill="#f0e6e6",width=max(2,int(16*z)),capstyle="round",tags=(tag,)); c.create_arc(x-77*z,y-4*z,x-8*z,y+30*z,start=180,extent=180,fill="#d7e2f4",outline="",tags=(tag,)); c.create_arc(x+3*z,y-5*z,x+77*z,y+31*z,start=180,extent=180,fill="#d7e2f4",outline="",tags=(tag,))
+
+    def dibujar(self)->None:
+        c=self.canvas; c.delete("all"); self.terreno(c); self.camino(c); self.casa(c,470,505,"Biblioteca","#4c78ae"); self.casa(c,300,680,"Archivo","#688c79"); self.casa(c,930,505,"Santuario","#9d4055"); self.puerta(c)
+        for nombre,ser in self.mundo.seres.items():
+            x,y=self.pantalla(ser.x,ser.y); tag=f"ser:{nombre}"
+            if nombre=="Biblioteca": self.bibliotecaria(c,x,y,tag)
+            elif nombre=="Curiosidad": self.curiosidad(c,x,y,tag)
+            elif nombre=="Corazón": self.corazon(c,x,y,tag)
+            elif nombre=="Observador": self.observador(c,x,y,tag)
+            elif nombre=="Centinela": self.caballero(c,x,y,tag,claro=True,espada=True)
+            else: self.caballero(c,x,y,tag)
+            c.create_text(x,y+55*self.zoom,text=nombre,fill="#f6edcf",font=("Georgia",max(8,int(10*self.zoom)),"bold"),tags=(tag,)); c.tag_bind(tag,"<Button-1>",lambda e,n=nombre:self.mostrar(n))
+        c.create_text(16,16,anchor="nw",text="Arrastra con botón derecho · Flechas para viajar · Rueda para acercar",fill="#e9ddb6",font=("Helvetica",9,"bold"))
+
+    def pulso(self)->None: self.mundo.pulso_demo(); self.actualizar()
+    def actualizar(self)->None:
+        self.cronica.delete(0,tk.END)
+        for evento in reversed(self.mundo.eventos[-18:]): self.cronica.insert(tk.END,f"{evento.actor}: {evento.detalle}")
         self.dibujar()
-    def animar(self) -> None: self.fase+=1; self.dibujar(); self.raiz.after(180,self.animar)
-    def mostrar_habitante(self,nombre:str)->None:
-        ficha=self.ciudad.ficha(nombre); self.inspector.configure(text=f"{ficha['nombre']}\n\nLugar: {ficha['lugar']}\nEstado: {ficha['estado']}\n\n{ficha['actividad']}")
-    def seleccionar_evento(self,_:object)->None:
-        seleccion=self.actividad.curselection()
-        if not seleccion:return
-        evento=list(reversed(self.ciudad.eventos[-14:]))[seleccion[0]]; self.inspector.configure(text=f"{evento.tipo.upper()}\n\n{evento.actor}\n{evento.detalle}\n\n{evento.momento}")
+    def animar(self)->None: self.fase+=1; self.dibujar(); self.raiz.after(170,self.animar)
+    def mostrar(self,nombre:str)->None:
+        ser=self.mundo.seres[nombre]; self.ficha.configure(text=f"{nombre}\n\nPosición: {ser.x}, {ser.y}\nEstado: {ser.estado}\n\n{ser.actividad}")
+    def seleccionar(self,_:object)->None:
+        elegido=self.cronica.curselection()
+        if not elegido:return
+        evento=list(reversed(self.mundo.eventos[-18:]))[elegido[0]]; self.ficha.configure(text=f"{evento.tipo.upper()}\n\n{evento.actor}\n{evento.detalle}\n\n{evento.momento}")
+
 
 def main()->None:
-    raiz=tk.Tk(); VentanaCiudad(raiz); raiz.mainloop()
-if __name__=="__main__":main()
+    raiz=tk.Tk(); VentanaMundo(raiz); raiz.mainloop()
+
+if __name__=="__main__": main()
