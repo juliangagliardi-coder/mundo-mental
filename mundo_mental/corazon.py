@@ -3,17 +3,35 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 from typing import Any, Iterable
 from uuid import uuid4
 
+from .aspecto import Aspecto, IdentidadAspecto
 from .biblioteca import Biblioteca
 from .casa_patrones import CasaPatrones
 
 Ejemplo = tuple[Iterable[Any], str]
 
 
-class Corazon:
-    def __init__(self, biblioteca: Biblioteca, tolerancia_olvido: float = 0.0):
+class Corazon(Aspecto):
+    IDENTIDAD = IdentidadAspecto(
+        nombre="Corazon",
+        esencia="Voluntad constructora que convierte necesidades probadas en reformas",
+        proposito="Mejorar capacidades sin sacrificar continuidad ni conocimiento protegido",
+        perspectiva="Compara la ciudad estable con candidatas reversibles y mide sus consecuencias",
+        principios=("construir_en_copia", "demostrar_mejora", "proteger_lo_aprendido"),
+        voz="Cálida, práctica y explícita sobre costes y renuncias",
+        autoridad=("proponer_obras", "ensayar_candidatas", "aceptar_mejoras_reversibles"),
+        limites=("reescribir_constitucion", "ocultar_regresiones", "destruir_copia_estable"),
+        tensiones=("iniciativa_y_prudencia", "mejora_y_continuidad"),
+        relaciones={"biblioteca": "consulta experiencia", "observacion": "expone daños posibles"},
+        sensibilidades={"necesidad": 1.0, "propuesta": 0.9, "fallo": 0.7, "mejora": 0.9},
+    )
+
+    def __init__(self, biblioteca: Biblioteca, tolerancia_olvido: float = 0.0,
+                 raiz: str | Path | None = None):
+        super().__init__(self.IDENTIDAD, raiz or getattr(biblioteca, "raiz", ".mente"))
         self.biblioteca = biblioteca
         self.tolerancia_olvido = tolerancia_olvido
 
@@ -59,31 +77,23 @@ class Corazon:
         for entrada, esperado in pruebas:
             respuesta, confianza = candidata.predecir(entrada)
             self.biblioteca.recordar(
-                entrada,
-                respuesta,
-                esperado,
-                respuesta == esperado,
-                {
-                    "habilidad": habilidad,
-                    "confianza": confianza,
-                    "candidata_aceptada": aceptada,
-                },
+                entrada, respuesta, esperado, respuesta == esperado,
+                {"habilidad": habilidad, "confianza": confianza, "candidata_aceptada": aceptada},
                 protegido=tuple(entrada) in entradas_protegidas,
             )
 
         obra = {
-            "id": str(uuid4()),
-            "habilidad": habilidad,
-            "tipo": "ampliar_ejemplos",
-            "aceptada": aceptada,
-            "precision_antes": precision_antes,
-            "precision_candidata": precision_candidata,
-            "retencion_antes": protegida_antes,
-            "retencion": protegida_despues,
-            "motivo": motivo,
+            "id": str(uuid4()), "habilidad": habilidad, "tipo": "ampliar_ejemplos",
+            "aceptada": aceptada, "precision_antes": precision_antes,
+            "precision_candidata": precision_candidata, "retencion_antes": protegida_antes,
+            "retencion": protegida_despues, "motivo": motivo,
             "ejemplos_agregados": len(entrenamiento),
             "antecedentes_consultados": len(antecedentes),
         }
         self.biblioteca.registrar_obra(obra)
         self.biblioteca.consolidar()
+        self.narrar("obra_aceptada" if aceptada else "obra_rechazada", motivo,
+                    habilidad=habilidad, obra=obra["id"],
+                    precision_antes=precision_antes, precision_despues=precision_candidata)
+        self.sentir("coherencia", 0.8 if aceptada else 0.6, motivo)
         return {"obra_id": obra["id"], **{k: v for k, v in obra.items() if k != "id"}}

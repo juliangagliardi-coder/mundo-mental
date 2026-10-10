@@ -1,45 +1,91 @@
-# Biblioteca 0.2
+# Biblioteca 0.5 experimental
 
-La Biblioteca ya no es solo una carpeta que acumula datos. Tiene tres clases de memoria:
+La Biblioteca mantiene tres memorias —episódica, semántica y procedimental— y añade una arquitectura interna preparada para crecer sin perder su identidad. Ella conserva la autoridad de interpretar; el Catalogador solo localiza.
 
-- **Episódica:** conserva experiencias concretas: qué entró, qué se respondió y qué ocurrió.
-- **Semántica:** consolida varias experiencias bajo conceptos generales.
-- **Procedimental:** guarda habilidades y versiones anteriores de cada Casa.
-
-## Ciclo de un recuerdo
-
-1. Una experiencia entra en la Hemeroteca episódica.
-2. Se calculan su novedad, sorpresa e importancia.
-3. Cuando se busca un recuerdo, la Biblioteca combina parecido, importancia y éxito.
-4. La recuperación incluye una explicación legible.
-5. Al consolidar, varios episodios forman un concepto sin destruir los originales.
-6. Al depurar, los duplicados se fusionan y los recuerdos protegidos sobreviven.
-
-## Salas físicas
-
-Dentro de `.mente/` se crean:
+## Pacto interno
 
 ```text
-experiencias.jsonl              Hemeroteca episódica
-conceptos.json                  Sala semántica
-obras.jsonl                     Archivo urbanístico
-habilidades/*.json              Habilidades actuales
-habilidades/versiones/*.json    Versiones antiguas restaurables
-planos/                          Mapoteca futura
+experiencia
+   ↓
+Biblioteca decide recordarla
+   ↓
+memoria canónica conserva el cuerpo
+   ↓
+Catalogador crea rutas y manifiestos
+   ↓
+consulta futura
+   ↓
+Catalogador señala candidatos
+   ↓
+Biblioteca comprende, ordena y explica
 ```
 
-## Operaciones principales
+El contrato `PuertoCatalogo` desacopla ambas funciones. Un catálogo futuro podrá usar nuevas estructuras, índices vectoriales o archivos distribuidos sin obligar a reescribir la personalidad, la consolidación ni las explicaciones de la Biblioteca.
+
+## Catalogador 0.2
+
+El Catalogador sigue siendo un órgano mecánico, no un Aspecto independiente. No posee deseos, identidad, autobiografía ni autoridad semántica. Su trabajo es hacer posible que la Biblioteca piense a escala.
+
+Ahora puede:
+
+- Agrupar recuerdos canónicos en Libros limitados.
+- Mantener rutas por estructura, categoría, origen y tema.
+- Actualizar manifiestos incrementalmente sin releer el Libro completo tras cada llegada.
+- Sellar Libros completos.
+- Localizar un presupuesto pequeño de candidatos.
+- Verificar referencias, recuentos y hashes de manifiestos.
+- Reconstruirse completamente desde los recuerdos canónicos.
+- Ser sustituido mediante un contrato estable.
+
+## Recuperación segura
+
+La recuperación ocurre en dos fases:
+
+1. El Catalogador reduce el espacio de búsqueda.
+2. La Biblioteca interpreta y puntúa los candidatos.
+
+Si el catálogo no devuelve candidatos o sufre una corrupción recuperable, la Biblioteca degrada temporalmente a búsqueda exhaustiva. Será más lenta, pero no fingirá haber olvidado. Cada búsqueda deja un diagnóstico con estrategia, universo total, presupuesto, candidatos localizados, recuerdos comprendidos y motivo de degradación.
 
 ```python
-biblioteca.recordar(...)
-biblioteca.buscar_similares(...)
-biblioteca.consolidar()
-biblioteca.depurar(max_recuerdos=1000)
-biblioteca.guardar_habilidad(...)
-biblioteca.consultar_obras(...)
-biblioteca.estado()
+recuerdos = biblioteca.buscar_similares(entrada)
+diagnostico = biblioteca.diagnostico_ultima_busqueda()
 ```
 
-## Seguridad
+## Fuente de verdad
 
-La depuración nunca elimina un recuerdo marcado como protegido para cumplir un límite. Si existen más recuerdos protegidos que el límite solicitado, se conservan todos. Las habilidades anteriores se archivan antes de sobrescribir la versión activa.
+Los episodios son la memoria canónica. Libros, ubicaciones, términos y manifiestos son mapas reconstruibles. Una optimización nunca se convierte silenciosamente en propietaria del recuerdo.
+
+Cada episodio tiene un único cuerpo, aunque múltiples rutas puedan apuntar a él. Esto permite encontrarlo por tiempo, patrón, concepto, origen o tema sin duplicar su contenido.
+
+## Salas actuales
+
+```text
+biblioteca.sqlite3              Memoria canónica, catálogo y conceptos
+habilidades/*.json              Habilidades actuales
+habilidades/versiones/*.json    Versiones restaurables
+planos/                          Mapoteca futura
+autobiografias/                 Continuidad de los Aspectos
+```
+
+## Límites conocidos
+
+- La consolidación todavía relee todos los episodios.
+- La depuración todavía reconstruye la memoria episódica completa.
+- El índice estructural actual está pensado para secuencias discretas, no para lenguaje o imágenes.
+- SQLite mantiene un único escritor simultáneo.
+- Una preselección rápida puede omitir recuerdos relevantes; la calidad debe compararse siempre con búsqueda exhaustiva.
+- El fallback exhaustivo protege la memoria, pero no será barato a gran escala.
+
+## Próximas pruebas
+
+Viabilidad 0.3 medirá por separado:
+
+- Coste de guardar el recuerdo canónico y coste de catalogarlo.
+- Latencia de búsqueda catalogada y exhaustiva.
+- Fracción de episodios que la Biblioteca necesita comprender.
+- Coincidencia entre los mejores resultados de ambas estrategias.
+- Coste de construir, verificar y reconstruir el catálogo.
+- Comportamiento con índices vacíos, dañados, fríos y calientes.
+- Tamaño de memoria canónica, rutas y manifiestos.
+
+El éxito no será solo responder más rápido. También deberá conservar recuerdos raros, explicar la recuperación y permitir que la Biblioteca siga siendo una identidad coherente en lugar de convertirse en una envoltura decorativa de una base de datos.

@@ -22,8 +22,11 @@ jobs:
           - test_biblioteca_sqlite
           - test_corazon
           - test_curiosidad
+          - test_identidad_persistente
           - test_migracion
           - test_observacion
+          - test_sistema_nervioso
+          - test_sistema_nervioso_v02
           - test_viabilidad
     steps:
       - uses: actions/checkout@v4
