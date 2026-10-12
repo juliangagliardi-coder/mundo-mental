@@ -1,28 +1,62 @@
-# Mundo Mental: trabajo visible
+# Monitor gráfico del trabajo real
 
-Abre la representación gráfica local con:
+Esto no es un juego ni una animación con tareas inventadas. Es una interfaz Tkinter que ejecuta el ciclo integrado de `iniciar.py` y transforma su telemetría en actividad visual.
+
+## Abrirlo
+
+Primero entra en la rama que contiene el monitor:
 
 ```bash
-python mundo.py
+git fetch origin
+git switch evolucion/ciudad-visual-01
 ```
 
-Esto **no es un juego**. Es una ventana visual sobre un ciclo de trabajo seguro y observable dentro del reino medieval fantástico.
+Comprueba que estás en la carpeta correcta:
 
-## Verlos trabajar
+```bash
+# Windows
+ dir mundo.py
 
-- Pulsa **Iniciar trabajo** para ejecutar el ciclo en repetición.
-- Pulsa **Pausar** para congelarlo.
-- Pulsa **Un paso** para avanzar manualmente una etapa.
-- El habitante activo se ilumina y el panel derecho explica qué hizo.
+# macOS o Linux
+ls mundo.py
+```
 
-El ciclo visual siempre sigue esta secuencia:
+Si el comando muestra `mundo.py`, ábrelo así:
 
-1. Curiosidad detecta una pregunta.
-2. Catalogador clasifica el trabajo.
-3. Biblioteca deja una traza temporal observable.
-4. Corazón evalúa el resultado como candidato.
-5. Centinela audita que no existan efectos persistentes.
+```bash
+# Windows
+py mundo.py
 
-Al cerrar cada ciclo, las figuras vuelven a sus posiciones y la traza visual se descarta. La visualización no escribe memoria persistente ni concede permisos: sirve para ver el sistema empezar a trabajar.
+# macOS o Linux
+python3 mundo.py
+```
 
-Puedes arrastrar con botón derecho para mover la cámara, usar la rueda para zoom y hacer clic en un habitante para inspeccionar su estado.
+## Qué ocurre realmente
+
+Al pulsar **Ejecutar un ciclo**, la aplicación llama al ciclo integrado real en un directorio temporal:
+
+1. Curiosidad examina conceptos, formula una pregunta y ejecuta un experimento aislado.
+2. El validador comprueba reproducibilidad y corroboración; si acepta la evidencia, Biblioteca escribe el recuerdo temporal.
+3. Guardián recibe una alarma, aísla el laboratorio, verifica la recuperación y lo reanuda.
+4. La ventana recibe esos eventos mediante un observador y destaca al personaje correspondiente.
+
+Catalogador y Corazón permanecen visualmente presentes pero en espera porque el ciclo integrado actual no los llama. La interfaz lo muestra así en lugar de fingir trabajo.
+
+## Controles
+
+- **Ejecutar un ciclo:** ejecuta una vez el ciclo real.
+- **Trabajar continuamente:** repite ciclos reales en espacios temporales independientes.
+- **Detener:** solicita detenerse después de la operación en curso.
+- **Clic en un personaje:** muestra su estado y última actividad.
+- **Botón derecho y arrastrar:** mueve la cámara.
+- **Rueda del ratón:** cambia el zoom.
+
+## Diagnóstico
+
+Si aparece `No module named tkinter`, falta el componente gráfico de Python. En Debian o Ubuntu:
+
+```bash
+sudo apt install python3-tk
+```
+
+Si aparece `can't open file 'mundo.py'`, la terminal no está dentro de la carpeta correcta o sigues en la rama `main`. Ejecuta `git branch --show-current` y confirma que responde `evolucion/ciudad-visual-01`.

@@ -1,34 +1,49 @@
+import tempfile
 import unittest
 
+from iniciar import ejecutar_ciclo
 from mundo_mental.mundo_virtual import MundoVirtual
 
 
 class PruebasMundoVirtual(unittest.TestCase):
-    def test_mundo_tiene_seres_y_flujo_observable(self):
+    def test_el_monitor_no_inventa_eventos_por_si_solo(self):
         mundo = MundoVirtual()
-        self.assertEqual(mundo.paso_siguiente(), "Curiosidad")
-        self.assertIn("Biblioteca", mundo.seres)
-        self.assertIn("Centinela", mundo.seres)
+        mundo.comenzar()
+        self.assertEqual(mundo.eventos, [])
+        self.assertIsNone(mundo.activo)
 
-    def test_ciclo_avanza_por_las_cinco_etapas(self):
+    def test_aplica_telemetria_del_ciclo_real(self):
         mundo = MundoVirtual()
-        eventos = [mundo.avanzar() for _ in range(5)]
-        self.assertEqual([evento.actor for evento in eventos], ["Curiosidad", "Catalogador", "Biblioteca", "Corazón", "Centinela"])
-        self.assertEqual(mundo.ciclos_terminados, 1)
-        self.assertEqual(mundo.paso_siguiente(), "Curiosidad")
+        evento = mundo.aplicar_evento(
+            "Curiosidad",
+            "preguntar",
+            {"detalle": "Formula una pregunta real", "pregunta_id": "p-1"},
+        )
+        self.assertEqual(evento.actor, "Curiosidad")
+        self.assertEqual(mundo.activo, "Curiosidad")
+        self.assertEqual(mundo.presencias["Curiosidad"].estado, "trabajando")
 
-    def test_inicio_y_pausa_son_explicitos(self):
-        mundo = MundoVirtual()
-        mundo.iniciar()
-        self.assertTrue(mundo.ciclo_activo)
-        mundo.pausar()
-        self.assertFalse(mundo.ciclo_activo)
+    def test_ciclo_integrado_emite_eventos_observables_reales(self):
+        recibidos = []
+        with tempfile.TemporaryDirectory() as carpeta:
+            resultado = ejecutar_ciclo(
+                carpeta,
+                observador=lambda actor, accion, datos: recibidos.append(
+                    (actor, accion, datos)
+                ),
+            )
+        actores = {actor for actor, _, _ in recibidos}
+        self.assertIn("Curiosidad", actores)
+        self.assertIn("Biblioteca", actores)
+        self.assertIn("Observador", actores)
+        self.assertTrue(resultado["dictamen"].aceptada)
+        self.assertTrue(resultado["reanudado"])
 
-    def test_ciclo_no_pretende_escribir_memoria_persistente(self):
+    def test_catalogador_y_corazon_quedan_honestamente_en_espera(self):
         mundo = MundoVirtual()
-        for _ in range(5):
-            mundo.avanzar()
-        self.assertIn("no se escribe memoria persistente", mundo.eventos[-1].detalle)
+        mundo.aplicar_evento("Curiosidad", "observar", {"detalle": "Trabaja"})
+        self.assertEqual(mundo.presencias["Catalogador"].estado, "en_espera")
+        self.assertEqual(mundo.presencias["Corazón"].estado, "latiente")
 
 
 if __name__ == "__main__":

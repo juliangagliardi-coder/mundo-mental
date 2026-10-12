@@ -1,104 +1,98 @@
-"""Representación gráfica, local y segura del trabajo de los Aspectos."""
+"""Estado visual derivado exclusivamente de eventos del ciclo real."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Iterable
+from typing import Any
+
+
+def _ahora() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 @dataclass(frozen=True)
-class EventoMundo:
-    tipo: str
+class EventoVisual:
     actor: str
+    accion: str
     detalle: str
-    momento: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    datos: dict[str, Any] = field(default_factory=dict)
+    momento: str = field(default_factory=_ahora)
 
 
 @dataclass
-class SerMundo:
+class Presencia:
     nombre: str
     x: int
     y: int
-    hogar_x: int
-    hogar_y: int
-    rumbo: str = "sur"
-    estado: str = "en_espera"
-    actividad: str = "Esperando trabajo"
+    estado: str
+    actividad: str
 
 
 class MundoVirtual:
-    """Orquesta una simulación visual sin ejecutar cambios persistentes reales."""
+    """Proyección visual: no inventa trabajo ni ejecuta lógica del Palacio."""
 
     ANCHO = 1800
     ALTO = 1200
     CAMINO = ((90, 600), (350, 600), (575, 520), (870, 520), (1120, 650), (1540, 650))
-    ESTACIONES = {
-        "Curiosidad": (650, 500), "Catalogador": (360, 650), "Biblioteca": (500, 545),
-        "Corazón": (930, 555), "Centinela": (900, 315),
-    }
-    FLUJO = (
-        ("Curiosidad", "pregunta", "Detecta una pregunta pendiente y la pone en circulación"),
-        ("Catalogador", "clasificacion", "Clasifica la tarea y prepara una ficha de trabajo"),
-        ("Biblioteca", "traza", "Registra una traza temporal para que el proceso sea observable"),
-        ("Corazón", "evaluacion", "Evalúa el resultado como candidato; no lo convierte en memoria"),
-        ("Centinela", "auditoria", "Audita el ciclo y confirma que no hubo efectos persistentes"),
-    )
 
-    def __init__(self):
-        self.seres = {
-            "Biblioteca": SerMundo("Biblioteca", 480, 575, 480, 575),
-            "Curiosidad": SerMundo("Curiosidad", 560, 555, 560, 555),
-            "Corazón": SerMundo("Corazón", 930, 555, 930, 555),
-            "Observador": SerMundo("Observador", 900, 130, 900, 130, estado="durmiente", actividad="Observa el ciclo desde el cielo"),
-            "Centinela": SerMundo("Centinela", 900, 315, 900, 315, estado="en_guardia", actividad="Vigila el trabajo"),
-            "Catalogador": SerMundo("Catalogador", 315, 720, 315, 720),
+    def __init__(self) -> None:
+        self.presencias = {
+            "Biblioteca": Presencia("Biblioteca", 480, 575, "en_espera", "Sin eventos todavía"),
+            "Curiosidad": Presencia("Curiosidad", 600, 555, "en_espera", "Sin eventos todavía"),
+            "Corazón": Presencia("Corazón", 930, 555, "latiente", "Presencia visual; no participa en este ciclo"),
+            "Observador": Presencia("Observador", 900, 130, "durmiente", "Espera una alarma real"),
+            "Centinela": Presencia("Centinela", 900, 315, "en_guardia", "Custodia bajo el Observador"),
+            "Catalogador": Presencia("Catalogador", 315, 720, "en_espera", "No invocado por el ciclo integrado actual"),
         }
-        self.eventos: list[EventoMundo] = []
-        self.ciclo_activo = False
-        self.paso = 0
+        self.eventos: list[EventoVisual] = []
+        self.activo: str | None = None
+        self.ejecutando = False
         self.ciclos_terminados = 0
-        self.registrar("mundo_despierto", "Mundo", "El reino está listo para mostrar trabajo observable")
+        self.ultimo_resultado: dict[str, Any] | None = None
 
-    def registrar(self, tipo: str, actor: str, detalle: str) -> EventoMundo:
-        evento = EventoMundo(tipo, actor, detalle)
+    def comenzar(self) -> None:
+        self.ejecutando = True
+        self.activo = None
+
+    def detener(self) -> None:
+        self.ejecutando = False
+        self.activo = None
+        self._restablecer_estados()
+
+    def aplicar_evento(
+        self,
+        actor: str,
+        accion: str,
+        datos: dict[str, Any],
+    ) -> EventoVisual:
+        detalle = str(datos.get("detalle", accion))
+        evento = EventoVisual(actor, accion, detalle, dict(datos))
         self.eventos.append(evento)
         self.eventos = self.eventos[-120:]
-        if actor in self.seres:
-            self.seres[actor].actividad = detalle
+        self._restablecer_estados()
+        if actor in self.presencias:
+            presencia = self.presencias[actor]
+            presencia.estado = "trabajando"
+            presencia.actividad = detalle
+            self.activo = actor
+        else:
+            self.activo = None
         return evento
 
-    def iniciar(self) -> EventoMundo:
-        self.ciclo_activo = True
-        return self.registrar("ciclo", "Mundo", "El ciclo de trabajo visual comienza")
+    def completar(self, resultado: dict[str, Any]) -> None:
+        self.ciclos_terminados += 1
+        self.ultimo_resultado = dict(resultado)
+        self.activo = None
+        self._restablecer_estados()
 
-    def pausar(self) -> EventoMundo:
-        self.ciclo_activo = False
-        return self.registrar("ciclo", "Mundo", "El ciclo de trabajo visual queda en pausa")
-
-    def avanzar(self) -> EventoMundo:
-        actor, tipo, detalle = self.FLUJO[self.paso]
-        ser = self.seres[actor]
-        destino = self.ESTACIONES[actor]
-        ser.x, ser.y = destino
-        ser.estado = "trabajando"
-        evento = self.registrar(tipo, actor, detalle)
-        for nombre, otro in self.seres.items():
-            if nombre not in {actor, "Observador"} and otro.estado != "en_guardia":
-                otro.estado = "en_espera"
-        self.paso += 1
-        if self.paso == len(self.FLUJO):
-            self.paso = 0
-            self.ciclos_terminados += 1
-            self.registrar("ciclo_completo", "Mundo", "Ciclo terminado: se descarta la traza temporal y no se escribe memoria persistente")
-            for nombre, otro in self.seres.items():
-                if nombre != "Observador":
-                    otro.x, otro.y = otro.hogar_x, otro.hogar_y
-                    otro.estado = "en_espera" if nombre != "Centinela" else "en_guardia"
-        return evento
-
-    def paso_siguiente(self) -> str:
-        return self.FLUJO[self.paso][0]
-
-    def cercanos(self, x: int, y: int, radio: int) -> Iterable[SerMundo]:
-        return (ser for ser in self.seres.values() if (ser.x-x)**2 + (ser.y-y)**2 <= radio**2)
+    def _restablecer_estados(self) -> None:
+        for nombre, presencia in self.presencias.items():
+            if nombre == "Corazón":
+                presencia.estado = "latiente"
+            elif nombre == "Observador":
+                presencia.estado = "durmiente"
+            elif nombre == "Centinela":
+                presencia.estado = "en_guardia"
+            else:
+                presencia.estado = "en_espera"
