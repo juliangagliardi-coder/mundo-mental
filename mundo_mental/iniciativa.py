@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import json
+import os
+import tempfile
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 from .curiosidad import Curiosidad, Pregunta, ResultadoExperimento
@@ -31,14 +35,15 @@ class Planificador:
 
     Tras ``max_fallos`` fallos seguidos en un origen pide ayuda a Observación (si hay
     Guardián conectado) y deja de investigar esa zona hasta que sea reanudada.
-    Sin Guardián ni buzón de alarmas, pausa el motor.
+    Sin Guardián ni buzón de alarmas, pausa el motor. Con ``ruta_estado`` persiste su
+    contador, sus fallos y sus preguntas retenidas; un estado ilegible pausa el motor.
     """
 
     def __init__(self, curiosidad: Curiosidad, motor: MotorDeCiclos,
                  max_por_ciclo: int = 1, max_total: int = 100,
                  supervisar: Callable[[Pregunta, str, dict[str, Any]], bool] | None = None,
                  max_decisiones: int = 1024, guardian: Guardian | None = None,
-                 max_fallos: int = 3):
+                 max_fallos: int = 3, ruta_estado: str | Path | None = None):
         if max_por_ciclo < 1 or max_total < 1 or max_decisiones < 1 or max_fallos < 1:
             raise ValueError("Los límites del planificador deben ser positivos")
         self.curiosidad = curiosidad
@@ -49,12 +54,15 @@ class Planificador:
         self.max_decisiones = max_decisiones
         self.guardian = guardian
         self.max_fallos = max_fallos
+        self.ruta_estado = Path(ruta_estado) if ruta_estado else None
         self.recetas: dict[str, Receta] = {}
         self.sin_receta: list[Pregunta] = []
         self.bloqueadas: list[Pregunta] = []
         self.fallos_seguidos: dict[str, int] = {}
         self.decisiones: list[Decision] = []
         self.total = 0
+        if self.ruta_estado and self.ruta_estado.exists():
+            self._cargar()
 
     def autorizar(self, origen: str, receta: Receta) -> None:
         if not origen:
@@ -90,6 +98,7 @@ class Planificador:
             if self.total >= self.max_total:
                 self.motor.pausar("iniciativas_agotadas")
                 break
+        self._guardar()
         return resultados
 
     def avanzar(self, ciclos: int = 1) -> list[ResultadoExperimento]:
@@ -120,6 +129,7 @@ class Planificador:
         self.curiosidad.preguntas.sort(key=lambda x: x.prioridad, reverse=True)
         if not self.guardian.incidentes_abiertos():
             self.guardian.dormir()
+        self._guardar()
         return True
 
     def explicar(self) -> list[Decision]:
@@ -149,3 +159,38 @@ class Planificador:
     def _anotar(self, pregunta: Pregunta, estado: str, motivo: str) -> None:
         self.decisiones.append(Decision(self.motor.tejido.ciclo, pregunta.texto, estado, motivo))
         del self.decisiones[:-self.max_decisiones]
+
+    def _guardar(self) -> None:
+        if not self.ruta_estado:
+            return
+        datos = {
+            "version": 1, "total": self.total, "fallos_seguidos": self.fallos_seguidos,
+            "bloqueadas": [asdict(p) for p in self.bloqueadas],
+            "sin_receta": [asdict(p) for p in self.sin_receta],
+        }
+        self.ruta_estado.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporal = tempfile.mkstemp(dir=self.ruta_estado.parent, suffix=".tmp")
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as archivo:
+                json.dump(datos, archivo, ensure_ascii=False)
+            os.replace(temporal, self.ruta_estado)
+        except BaseException:
+            Path(temporal).unlink(missing_ok=True)
+            raise
+
+    def _cargar(self) -> None:
+        try:
+            datos = json.loads(self.ruta_estado.read_text(encoding="utf-8"))
+            self.total = int(datos["total"])
+            self.fallos_seguidos = {str(k): int(v) for k, v in datos["fallos_seguidos"].items()}
+            self.bloqueadas = [self._pregunta(d) for d in datos["bloqueadas"]]
+            self.sin_receta = [self._pregunta(d) for d in datos["sin_receta"]]
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+            self.total, self.fallos_seguidos = 0, {}
+            self.bloqueadas, self.sin_receta = [], []
+            self.motor.pausar(f"estado_planificador_corrupto:{type(error).__name__}")
+
+    @staticmethod
+    def _pregunta(datos: dict[str, Any]) -> Pregunta:
+        return Pregunta(str(datos["texto"]), str(datos["origen"]), float(datos["prioridad"]),
+                        tuple(datos.get("evidencias", ())), str(datos["id"]))
