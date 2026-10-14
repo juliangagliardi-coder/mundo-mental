@@ -9,3 +9,7 @@ Regla acordada: **no existen acciones irreversibles**.
 5. Todo queda en `autoridad/registro.jsonl`, solo de añadir.
 
 Implementación: `mundo_mental/autoridad.py`. Pruebas: `tests/test_autoridad.py`.
+
+## Reformas del Corazón
+
+`mundo_mental/reforma.py` hace latir al Corazón a través de la Autoridad. Antes de latir guarda la habilidad vigente; si algo falla, la restaura con `guardar_habilidad`, que archiva la versión reemplazada, de modo que revertir tampoco pierde nada. Una reforma sobre una zona protegida ni siquiera llega a ejecutarse. Pruebas: `tests/test_reforma.py`.
