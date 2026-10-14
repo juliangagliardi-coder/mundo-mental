@@ -25,14 +25,18 @@ class MotorDeCiclos:
     """Avanza el Tejido con límites explícitos; no decide qué hacen los Aspectos."""
 
     def __init__(self, tejido: TejidoMental, ruta_estado: str | Path | None = None,
-                 presupuesto: int = 100, max_por_aspecto: int = 16, max_historial: int = 256):
+                 presupuesto: int = 100, max_por_aspecto: int = 16, max_historial: int = 256,
+                 limite_total: int | None = None):
         if presupuesto < 1 or max_por_aspecto < 1 or max_historial < 1:
             raise ValueError("presupuesto, max_por_aspecto y max_historial deben ser positivos")
+        if limite_total is not None and limite_total < 1:
+            raise ValueError("limite_total debe ser positivo")
         self.tejido = tejido
         self.ruta_estado = Path(ruta_estado) if ruta_estado else None
         self.presupuesto = presupuesto
         self.max_por_aspecto = max_por_aspecto
         self.max_historial = max_historial
+        self.limite_total = limite_total
         self.estado = "despierto"
         self.motivo = ""
         self.latidos_totales = 0
@@ -47,6 +51,9 @@ class MotorDeCiclos:
             raise RuntimeError(f"El motor está {self.estado}: {self.motivo or 'sin motivo'}")
         hechos: list[ResumenCiclo] = []
         for _ in range(ciclos):
+            if self.limite_total is not None and self.latidos_totales >= self.limite_total:
+                self.pausar("limite_total")
+                break
             if len(hechos) >= self.presupuesto:
                 self.pausar("presupuesto_agotado")
                 break
