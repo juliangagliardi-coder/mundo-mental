@@ -13,6 +13,7 @@ from .corazon import Corazon
 from .calles import Calle, Calles, Mensaje, Router
 from .curiosidad import Curiosidad, Pregunta, ResultadoExperimento
 from .evidencia import DictamenEvidencia, ValidadorEvidencia
+from .genoma import Genoma, Hito, Vigilante
 from .motor import MotorDeCiclos, ResumenCiclo
 from .iniciativa import Decision, Planificador, Receta
 from .migracion import InformeMigracion, migrar_biblioteca
@@ -27,7 +28,8 @@ __all__ = [
     "DiagnosticoBusqueda", "LocalizacionCatalogo", "PuertoCatalogo",
     "CasaPatrones", "Corazon", "Calle", "Calles", "Mensaje", "Router",
     "Curiosidad", "Pregunta", "ResultadoExperimento", "DictamenEvidencia", "ValidadorEvidencia",
-    "InformeMigracion", "migrar_biblioteca", "Alarma", "BuzonAlarmas", "Centinela", "Guardian",
+    "Genoma", "Hito", "Vigilante", "InformeMigracion", "migrar_biblioteca",
+    "Alarma", "BuzonAlarmas", "Centinela", "Guardian",
     "MotorDeCiclos", "ResumenCiclo", "Decision", "Planificador", "Receta",
     "EstadisticasNerviosas", "Impulso", "Reaccion", "SistemaNervioso", "TejidoMental",
 ]
