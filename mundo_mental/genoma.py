@@ -68,11 +68,15 @@ class Genoma:
         self.intervalo_anclas = intervalo_anclas
         self.rutas = (self.raiz / "primaria.jsonl", self.raiz / "respaldo.jsonl")
 
-    def _leer_ruta(self, ruta: Path) -> list[Hito]:
+    def _leer_ruta(self, ruta: Path) -> list[Hito] | None:
+        """Hitos de una réplica; [] si no existe; None si está ilegible o malformada."""
         if not ruta.exists():
             return []
-        with ruta.open(encoding="utf-8") as archivo:
-            return [Hito(**json.loads(linea)) for linea in archivo if linea.strip()]
+        try:
+            with ruta.open(encoding="utf-8") as archivo:
+                return [Hito(**json.loads(linea)) for linea in archivo if linea.strip()]
+        except (OSError, ValueError, TypeError):
+            return None
 
     def hitos(self) -> list[Hito]:
         primaria = self._leer_ruta(self.rutas[0])
@@ -81,7 +85,7 @@ class Genoma:
             return primaria
         if respaldo and self.verificar(respaldo):
             return respaldo
-        return primaria or respaldo
+        return primaria or respaldo or []
 
     def _escribir_en_ambas(self, hito: Hito) -> None:
         for ruta in self.rutas:
@@ -104,6 +108,8 @@ class Genoma:
         if not isinstance(cambio, dict):
             raise TypeError("El cambio debe ser un diccionario serializable")
         anteriores = self.hitos()
+        if not anteriores and any(ruta.exists() and ruta.stat().st_size > 0 for ruta in self.rutas):
+            raise ValueError("No se puede registrar: las réplicas existen pero no son legibles")
         estado_anterior = self.reconstruir(anteriores) if anteriores else {}
         estado = _mezclar(estado_anterior, cambio)
         ancla = not anteriores or importante or len(anteriores) % self.intervalo_anclas == 0
@@ -144,23 +150,29 @@ class Genoma:
 
     def auditar(self) -> dict[str, Any]:
         primaria, respaldo = (self._leer_ruta(ruta) for ruta in self.rutas)
+        legibles = primaria is not None and respaldo is not None
         return {
-            "primaria_valida": self.verificar(primaria),
-            "respaldo_valido": self.verificar(respaldo),
-            "replicas_coinciden": [_hash(asdict(x)) for x in primaria] == [_hash(asdict(x)) for x in respaldo],
+            "primaria_valida": primaria is not None and self.verificar(primaria),
+            "respaldo_valido": respaldo is not None and self.verificar(respaldo),
+            "replicas_coinciden": legibles
+            and [_hash(asdict(x)) for x in primaria] == [_hash(asdict(x)) for x in respaldo],
             "hitos": len(self.hitos()),
         }
 
     def reparar(self) -> bool:
-        primaria, respaldo = (self._leer_ruta(ruta) for ruta in self.rutas)
-        fuente = primaria if self.verificar(primaria) else respaldo
-        destino = self.rutas[1] if fuente is primaria else self.rutas[0]
-        if not self.verificar(fuente):
+        """Copia la réplica verificable más larga sobre las demás. Nunca copia una vacía."""
+        leidas = [self._leer_ruta(ruta) for ruta in self.rutas]
+        validas = [(i, h) for i, h in enumerate(leidas) if h and self.verificar(h)]
+        if not validas:
             return False
-        destino.parent.mkdir(parents=True, exist_ok=True)
-        with destino.open("w", encoding="utf-8") as archivo:
-            for hito in fuente:
-                archivo.write(_canonico(asdict(hito)) + "\n")
+        origen, fuente = max(validas, key=lambda par: len(par[1]))
+        for i, destino in enumerate(self.rutas):
+            if i == origen:
+                continue
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            with destino.open("w", encoding="utf-8") as archivo:
+                for hito in fuente:
+                    archivo.write(_canonico(asdict(hito)) + "\n")
         return True
 
 
