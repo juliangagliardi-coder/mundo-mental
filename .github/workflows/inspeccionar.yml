@@ -1,8 +1,8 @@
-name: Inspeccionar Palacio Mental
+name: Inspeccionar Mundo Mental
 
 on:
   push:
-    branches: [main, "evolucion/**"]
+    branches: [main, "evolucion/**", "saneamiento/**"]
   pull_request:
     branches: [main]
 
@@ -10,49 +10,35 @@ permissions:
   contents: read
 
 jobs:
-  prueba-por-modulo:
-    name: ${{ matrix.modulo }}
+  pruebas:
+    name: Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        modulo:
-          - test_aspecto
-          - test_biblioteca
-          - test_biblioteca_sqlite
-          - test_corazon
-          - test_curiosidad
-          - test_identidad_persistente
-          - test_migracion
-          - test_observacion
-          - test_sistema_nervioso
-          - test_sistema_nervioso_v02
-          - test_viabilidad
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - run: python -m unittest -v tests/${{ matrix.modulo }}.py
-
-  ciclo-y-benchmarks:
-    name: ${{ matrix.comprobacion }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        comprobacion: [ciclo, viabilidad, comparativa]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Ciclo inicial
-        if: matrix.comprobacion == 'ciclo'
+          python-version: ${{ matrix.python-version }}
+      - name: Comprobar sintaxis
+        run: python -m compileall -q mundo_mental benchmarks iniciar.py
+      - name: Ejecutar todas las pruebas
+        run: python -m unittest discover -s tests -v
+      - name: Ejecutar ciclo integrado
         run: python iniciar.py
-      - name: Viabilidad
-        if: matrix.comprobacion == 'viabilidad'
-        run: python benchmarks/viabilidad_01.py --sizes 4 8 --output /tmp/viabilidad.json
-      - name: Comparativa
-        if: matrix.comprobacion == 'comparativa'
-        run: python benchmarks/comparar_bibliotecas.py --sizes 4 8 --output /tmp/comparativa.json
+
+  viabilidad:
+    name: Benchmarks de humo
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python benchmarks/viabilidad_01.py --sizes 4 8 --output /tmp/viabilidad.json
+      - run: python benchmarks/comparar_bibliotecas.py --sizes 4 8 --output /tmp/comparativa.json
+      - run: python benchmarks/catalogador_01.py --size 8 --queries 4 --output /tmp/catalogador.json

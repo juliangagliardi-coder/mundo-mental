@@ -86,7 +86,7 @@ class Calles(Aspecto, Router):
     def registrar_calle(self, calle: Calle) -> None:
         Router.registrar_calle(self, calle)
         self.narrar("calle_abierta", f"Abrí {calle.id}: {calle.origen} -> {calle.destino}",
-                    tipo=calle.tipo_aceptado)
+                    tipo_aceptado=calle.tipo_aceptado)
 
     def enviar(self, calle_id: str, mensaje: Mensaje) -> Any:
         try:
