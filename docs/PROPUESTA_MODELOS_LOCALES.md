@@ -1,91 +1,90 @@
-# Propuesta: modelos de IA locales opcionales por identidad
+# Propuesta: razonador mínimo para identidad y razonamiento básico
 
-Estado: **propuesta pendiente de aprobación del creador** (Constitución, regla 15). Este documento no cambia código ni comportamiento.
+Estado: **propuesta pendiente de aprobación del creador** (Constitución, regla 15). No cambia código ni comportamiento. No modifica `CONSTITUCION.md`: las reglas nuevas aquí son borradores y solo pasarán a la Constitución con aprobación humana explícita (regla 25).
 
 ## Problema observado
 
-Los Aspectos tienen memoria, identidad y reglas, pero su capacidad de razonar depende solo de recetas fijas. Recordar, transferir y adaptarse (regla 12) no se pueden demostrar sin algo que razone.
+Los Aspectos tienen memoria, identidad y reglas, pero su razonamiento depende de recetas fijas. El creador pide una IA **muy simple**, solo para dar identidad y razonamiento básico al servicio de tres reglas máximas.
 
-## Propuesta
+## Reglas máximas propuestas (borrador)
 
-Añadir una **interfaz opcional de razonamiento** (`Razonador`) con tres implementaciones:
+Texto original del creador, con una lectura operativa:
 
-- `RazonadorNulo`: valor por defecto; reproduce el comportamiento actual. Sin red, sin dependencias.
-- `RazonadorFalso`: determinista, solo para pruebas.
-- `RazonadorOllama`: llama a un servidor local de Ollama (`http://localhost:11434/api/chat`, `stream: false`) usando solo la biblioteca estándar de Python.
+1. **Evolucionar mentes o Aspectos.** Cada Aspecto puede proponer mejoras de sí mismo (perspectiva, principios, recetas), siempre como candidatas.
+2. **Formar parte de lo mismamente evolucionado.** Lo que evoluciona un Aspecto debe seguir siendo compatible con el conjunto ya evolucionado: ninguna evolución individual rompe la coherencia del Palacio.
+3. **Aportar al razonamiento global del Mundo Mental.** Cada Aspecto contribuye con su perspectiva a una síntesis compartida.
 
-El proyecto sigue sin requerir librerías externas ni Ollama para ejecutar la demo y las pruebas.
+Adiciones sugeridas (a decidir por el creador):
 
-## Un modelo, varias identidades
+4. **La evolución no borra la identidad.** Evolucionar no autoriza a aplanar, fusionar o eliminar a un Aspecto (ya implicado por la regla 14). Si dos reglas chocan, gana la identidad protegida.
+5. **Lo razonado es imaginado hasta validarse.** La salida del modelo es una propuesta; solo pasa a conocimiento tras pruebas y Autoridad (reglas 22 y 23).
 
-Se recomienda **un único modelo compartido** y no uno por identidad:
+Puntos que el creador debe aclarar: qué significa exactamente «formar parte de lo mismamente evolucionado» (la lectura de la regla 2 es una interpretación) y si las adiciones 4 y 5 se aceptan.
 
-- La identidad vive en la Biblioteca (ficha, principios, memoria autobiográfica), no en los pesos del modelo.
-- Cada Aspecto recibe su propio mensaje de sistema construido desde su ficha, y su propio historial.
-- Cargar varios modelos a la vez multiplica el uso de memoria y no aporta identidad real.
-- Un modelo distinto por Aspecto solo se justificaría si una prueba repetible demuestra que mejora una necesidad declarada (regla 1 y regla 11).
+## Qué haría la IA (y qué no)
 
-## Reglas de seguridad no negociables
+Un modelo diminuto con tres trabajos acotados, uno por regla:
 
-1. La salida del modelo se etiqueta como **imaginada**, nunca como evidencia (regla 22).
-2. El modelo propone; no ejecuta. Toda acción pasa por Autoridad con reversa.
-3. Solo `localhost`. Sin claves ni modelos en la nube.
-4. Tiempo máximo por llamada y número máximo de llamadas por ciclo (regla 9).
-5. Si el servidor no responde, el Aspecto vuelve al comportamiento determinista y lo registra.
-6. Ningún Aspecto puede modificar la configuración del Razonador, del Guardián ni del Centinela (regla 21).
-7. Las pruebas usan `RazonadorFalso`; ninguna prueba requiere descargar un modelo.
+| Regla | Trabajo del modelo | Validación en código determinista |
+|---|---|---|
+| 1. Evolucionar | Redactar una propuesta corta de cambio para un Aspecto | Formato fijo, tamaño máximo, rama aislada, Autoridad con reversa |
+| 2. Formar parte | Clasificar si una propuesta es coherente con las fichas de los demás Aspectos | Comparación contra fichas y principios protegidos; ante duda, rechazo |
+| 3. Aportar | Resumir la perspectiva del Aspecto en pocas frases para una síntesis global | Etiqueta «imaginado», límite de longitud, registro en Biblioteca |
 
-## Hardware del creador
+No haría: ejecutar acciones, decidir sin Autoridad, cambiar la Constitución, modificar al Guardián o al Centinela, ni aportar hechos del mundo. Los modelos muy pequeños fallan al recordar datos, pero sirven para clasificación, resumen y coherencia de estilo; por eso los trabajos anteriores evitan depender de hechos.
 
-Declarado por el creador: Dell Latitude 3550, Windows, procesador i3, 8 GB de RAM. No hay tarjeta gráfica dedicada, así que la inferencia será **solo en CPU**.
+## Modelo propuesto
 
-Pendiente de confirmar: generación exacta del i3. Existen versiones muy distintas del Latitude 3550 (por ejemplo un i3 de 5.ª generación con 2 núcleos y un i3-1315U con 6 núcleos). Se confirma en Windows con Administrador de tareas > Rendimiento > CPU.
+Un solo modelo compartido; la identidad vive en la Biblioteca y se inyecta como mensaje de sistema. Candidatos, de menor a mayor:
 
-Consecuencias de diseño:
+| Modelo | Tamaño de descarga aproximado | Nota |
+|---|---|---|
+| SmolLM2 135M | 271 MB | Mínimo absoluto; solo para clasificación muy simple |
+| SmolLM2 360M | 726 MB | Buen punto de partida para pruebas |
+| Qwen3 0.6B | unos 523 MB (Q4) | Unos 1,5 GB de memoria al ejecutarse; recomendado como primera opción |
+| Llama 3.2 1B | alrededor de 1,3 GB | Margen extra de calidad si la laptop lo permite |
 
-- Modelos de **1B a 3B** parámetros con cuantización Q4. Los de 7B u 8B quedan en el límite o por encima.
-- Con 8 GB, Windows y otros programas ocupan una parte importante; conviene cerrar aplicaciones al usar el modelo.
-- Velocidad esperada baja (unas pocas decenas de tokens por segundo como mucho, y menos con CPU antigua). Por eso el presupuesto de llamadas por ciclo debe ser estricto y las respuestas cortas.
-- Una sola llamada a la vez; los Aspectos comparten el modelo por turnos.
+La elección final se decide midiendo velocidad y memoria en la laptop del creador (Dell Latitude 3550, i3, 8 GB, solo CPU), no con cifras de terceros.
 
-Candidatos iniciales (a probar y medir en la máquina real):
+## Reglas de seguridad
 
-| Modelo | Uso previsto |
-|---|---|
-| Llama 3.2 3B | Opción principal de calidad dentro del límite de memoria |
-| Llama 3.2 1B o Qwen3 1.7B | Opción rápida si el 3B resulta lento |
+1. Salida marcada como **imaginada** (regla 22).
+2. El modelo propone; Autoridad ejecuta con reversa.
+3. Solo `localhost` (`http://localhost:11434/api/chat`, `stream: false`), sin nube ni claves.
+4. Tiempo y número de llamadas máximos por ciclo (regla 9).
+5. Si el servidor falla, vuelve el comportamiento determinista y se registra.
+6. Ningún Aspecto modifica el Razonador, el Guardián ni el Centinela (regla 21).
+7. Pruebas con `RazonadorFalso`; ninguna prueba requiere descargar un modelo.
+8. Todo cambio se compara con la versión anterior antes de adoptarse (reglas 3 y 11).
 
-La elección final se decide con una medición propia (tokens por segundo y memoria usada), no con cifras de terceros.
+## Plan por fases
+
+1. Interfaz `Razonador` con `RazonadorNulo` (por defecto) y `RazonadorFalso`, con pruebas.
+2. `RazonadorOllama` con biblioteca estándar, tiempo máximo y degradación segura.
+3. Script de medición de tokens por segundo y memoria en la laptop del creador.
+4. Plantillas de los tres trabajos (evolucionar, coherencia, aporte) con formato de salida fijo.
+5. Validadores deterministas de cada salida.
+6. Etiquetado como imaginado, paso por Autoridad y presupuesto por Aspecto.
+7. Banco de tareas repetibles con línea base sin modelo para comprobar si el razonador aporta algo (regla 11).
 
 ## Alternativas
 
-- No hacer nada: el proyecto queda como prototipo de infraestructura.
-- Un modelo por identidad: más memoria, sin ventaja demostrada, inviable con 8 GB.
-- API en la nube: rompe el requisito local y la regla de no depender de terceros.
-- Ampliar la RAM: opción de hardware a evaluar más adelante si el cuello de botella es memoria.
-
-## Plan por fases (cada una, un mensaje o más)
-
-1. Interfaz `Razonador`, `RazonadorNulo` y `RazonadorFalso` con pruebas.
-2. `RazonadorOllama` con tiempo máximo, reintentos acotados y degradación segura.
-3. Script de medición de velocidad y memoria en la laptop del creador.
-4. Constructor de mensaje de sistema desde la ficha de identidad.
-5. Etiquetado de salida como imaginada y paso por Autoridad.
-6. Presupuesto de llamadas por Aspecto y registro de auditoría.
-7. Banco de tareas repetibles: recuerdo, transferencia y adaptación, con línea base sin modelo.
-8. Comparación candidata contra versión anterior antes de adoptar (reglas 3 y 11).
+- Sin modelo: reglas y plantillas deterministas para las tres tareas. Es la línea base obligatoria; si el modelo no la supera en las pruebas, no se adopta.
+- Modelo mediano (3B o más): más capaz pero lento y exigente con 8 GB; descartado de inicio por el pedido de simplicidad.
+- Un modelo por Aspecto: sin ventaja demostrada y costoso en memoria.
 
 ## Beneficio, coste y riesgo
 
-- Beneficio esperado: primera capacidad real de razonar, medible contra una línea base.
-- Coste: una dependencia opcional externa (Ollama), uso de memoria y CPU, y respuestas lentas.
-- Riesgo principal: tratar texto generado como conocimiento. Mitigado por las reglas de seguridad 1 y 2.
-- Riesgo de hardware: que el 3B sea demasiado lento; se mitiga con el modelo de 1B y con presupuestos estrictos.
-- Efecto sobre identidades: ninguno si se mantiene la ficha como fuente de verdad; se añadirá una prueba de deriva.
+- Beneficio: razonamiento básico medible, ligado a las tres reglas.
+- Coste: dependencia opcional (Ollama) y algo de CPU y memoria.
+- Riesgo: texto generado tratado como conocimiento; un modelo diminuto puede decir tonterías con seguridad. Mitigado con formato fijo, validadores y etiqueta de imaginado.
+- Riesgo de diseño: que «evolucionar» choque con proteger la identidad; mitigado con la adición 4.
+- Efecto sobre identidades: ninguno si la ficha es la fuente de verdad; se añadirá una prueba de deriva.
 - Reversión: dejar de usar `RazonadorOllama` devuelve el comportamiento actual.
 
-## Decisión pedida al creador
+## Decisiones pedidas al creador
 
-- ¿Aprobar las fases 1 a 3? (sí / no / cambios)
-- ¿Confirmar un modelo compartido?
-- Generación exacta del procesador i3 (ver arriba).
+- ¿Aprobar las tres reglas máximas como borrador y aclarar la regla 2?
+- ¿Aceptar las adiciones 4 y 5?
+- ¿Aprobar las fases 1 a 3?
+- Confirmar el procesador i3 exacto de la laptop.
