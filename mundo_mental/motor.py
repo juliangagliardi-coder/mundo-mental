@@ -13,7 +13,7 @@ from typing import Any
 from .tejido import TejidoMental
 
 ESTADOS = ("despierto", "durmiendo", "pausado")
-VERSION_ESTADO = 2
+VERSION_ESTADO = 3
 
 
 @dataclass(frozen=True)
@@ -46,6 +46,7 @@ class MotorDeCiclos:
         self.motivo = ""
         self.latidos_totales = 0
         self.historial: list[ResumenCiclo] = []
+        self._inicio_sesion = time.monotonic()
         if self.ruta_estado and self.ruta_estado.exists():
             self._cargar()
 
@@ -55,7 +56,6 @@ class MotorDeCiclos:
         if self.estado != "despierto":
             raise RuntimeError(f"El motor está {self.estado}: {self.motivo or 'sin motivo'}")
         hechos: list[ResumenCiclo] = []
-        inicio = time.monotonic()
         for _ in range(ciclos):
             if self.limite_total is not None and self.latidos_totales >= self.limite_total:
                 self.pausar("limite_total")
@@ -63,8 +63,7 @@ class MotorDeCiclos:
             if len(hechos) >= self.presupuesto:
                 self.pausar("presupuesto_agotado")
                 break
-            if (self.tiempo_max_segundos is not None
-                    and time.monotonic() - inicio >= self.tiempo_max_segundos):
+            if self._tiempo_agotado():
                 self.pausar("tiempo_agotado")
                 break
             reacciones = self.tejido.latir(self.max_por_aspecto)
@@ -84,11 +83,16 @@ class MotorDeCiclos:
         self._cambiar("durmiendo", motivo)
 
     def despertar(self) -> None:
+        self._inicio_sesion = time.monotonic()
         self._cambiar("despierto", "")
 
     def diagnostico(self) -> dict[str, Any]:
         return {"estado": self.estado, "motivo": self.motivo, "ciclo": self.tejido.ciclo,
                 "latidos_totales": self.latidos_totales, "historial": len(self.historial)}
+
+    def _tiempo_agotado(self) -> bool:
+        return (self.tiempo_max_segundos is not None
+                and time.monotonic() - self._inicio_sesion >= self.tiempo_max_segundos)
 
     def _cambiar(self, estado: str, motivo: str) -> None:
         if estado not in ESTADOS:
@@ -124,5 +128,6 @@ class MotorDeCiclos:
             self.tejido.ciclo = int(datos["ciclo"])
             self.latidos_totales = int(datos["latidos_totales"])
             self.historial = historial[-self.max_historial:]
+            self._inicio_sesion = time.monotonic()
         except (OSError, ValueError, KeyError, TypeError) as error:
             self.estado, self.motivo = "pausado", f"estado_corrupto:{type(error).__name__}"
