@@ -5,13 +5,15 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from dataclasses import dataclass
+import time
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
 from .tejido import TejidoMental
 
 ESTADOS = ("despierto", "durmiendo", "pausado")
+VERSION_ESTADO = 2
 
 
 @dataclass(frozen=True)
@@ -26,17 +28,20 @@ class MotorDeCiclos:
 
     def __init__(self, tejido: TejidoMental, ruta_estado: str | Path | None = None,
                  presupuesto: int = 100, max_por_aspecto: int = 16, max_historial: int = 256,
-                 limite_total: int | None = None):
+                 limite_total: int | None = None, tiempo_max_segundos: float | None = None):
         if presupuesto < 1 or max_por_aspecto < 1 or max_historial < 1:
             raise ValueError("presupuesto, max_por_aspecto y max_historial deben ser positivos")
         if limite_total is not None and limite_total < 1:
             raise ValueError("limite_total debe ser positivo")
+        if tiempo_max_segundos is not None and tiempo_max_segundos <= 0:
+            raise ValueError("tiempo_max_segundos debe ser positivo")
         self.tejido = tejido
         self.ruta_estado = Path(ruta_estado) if ruta_estado else None
         self.presupuesto = presupuesto
         self.max_por_aspecto = max_por_aspecto
         self.max_historial = max_historial
         self.limite_total = limite_total
+        self.tiempo_max_segundos = tiempo_max_segundos
         self.estado = "despierto"
         self.motivo = ""
         self.latidos_totales = 0
@@ -50,12 +55,17 @@ class MotorDeCiclos:
         if self.estado != "despierto":
             raise RuntimeError(f"El motor está {self.estado}: {self.motivo or 'sin motivo'}")
         hechos: list[ResumenCiclo] = []
+        inicio = time.monotonic()
         for _ in range(ciclos):
             if self.limite_total is not None and self.latidos_totales >= self.limite_total:
                 self.pausar("limite_total")
                 break
             if len(hechos) >= self.presupuesto:
                 self.pausar("presupuesto_agotado")
+                break
+            if (self.tiempo_max_segundos is not None
+                    and time.monotonic() - inicio >= self.tiempo_max_segundos):
+                self.pausar("tiempo_agotado")
                 break
             reacciones = self.tejido.latir(self.max_por_aspecto)
             resumen = ResumenCiclo(self.tejido.ciclo, len(reacciones),
@@ -89,8 +99,9 @@ class MotorDeCiclos:
     def _guardar(self) -> None:
         if not self.ruta_estado:
             return
-        datos = {"version": 1, "estado": self.estado, "motivo": self.motivo,
-                 "ciclo": self.tejido.ciclo, "latidos_totales": self.latidos_totales}
+        datos = {"version": VERSION_ESTADO, "estado": self.estado, "motivo": self.motivo,
+                 "ciclo": self.tejido.ciclo, "latidos_totales": self.latidos_totales,
+                 "historial": [asdict(r) for r in self.historial]}
         self.ruta_estado.parent.mkdir(parents=True, exist_ok=True)
         descriptor, temporal = tempfile.mkstemp(dir=self.ruta_estado.parent, suffix=".tmp")
         try:
@@ -107,8 +118,11 @@ class MotorDeCiclos:
             estado = datos["estado"]
             if estado not in ESTADOS:
                 raise ValueError(estado)
+            historial = [ResumenCiclo(int(r["ciclo"]), int(r["reacciones"]), int(r["atendidas"]))
+                         for r in datos.get("historial", [])]
             self.estado, self.motivo = estado, str(datos.get("motivo", ""))
             self.tejido.ciclo = int(datos["ciclo"])
             self.latidos_totales = int(datos["latidos_totales"])
+            self.historial = historial[-self.max_historial:]
         except (OSError, ValueError, KeyError, TypeError) as error:
             self.estado, self.motivo = "pausado", f"estado_corrupto:{type(error).__name__}"
