@@ -5,13 +5,14 @@ from pathlib import Path
 from mundo_mental.aspecto import Aspecto, IdentidadAspecto
 from mundo_mental.arranque import (RazonadorLimitado, ReflexionTierra, construir_mundo,
                                    construir_razonadores)
-from mundo_mental.banco_tareas import BancoTareas, TAREAS_BASE
+from mundo_mental.banco_tareas import BancoTareas, TAREAS_BASE, TAREAS_EXTRA
 from mundo_mental.mente_aspecto import conectar_mentes
 from mundo_mental.sistema_nervioso import Impulso, SistemaNervioso
 from mundo_mental.tejido import TejidoMental
 from mundo_mental.tierra import RazonadorNulo
 
-REF = {t.id: t.referencia for t in TAREAS_BASE}
+REF = {t.id: t.referencia for t in TAREAS_BASE + TAREAS_EXTRA}
+IDS_BASE = {t.id for t in TAREAS_BASE}
 
 
 class Falso:
@@ -123,7 +124,9 @@ class TestMundoConTrabajo(unittest.TestCase):
         self.assertGreaterEqual(mundo.vida.ciclos, 1)
         self.assertEqual(mundo.vida.fallos_ciclo, 0)
         self.assertGreaterEqual(mundo.reflexion.emitidos, 1)
-        self.assertEqual(set(mundo.trabajo._cargar_adoptadas()), set(BancoTareas().ids()))
+        adoptadas = set(mundo.trabajo._cargar_adoptadas())
+        self.assertTrue(IDS_BASE <= adoptadas)
+        self.assertTrue(adoptadas <= set(BancoTareas().ids()))
 
     def test_el_tope_horario_frena_al_modelo(self):
         tmp = tempfile.TemporaryDirectory()
