@@ -108,10 +108,12 @@ class MenteAspecto:
 
 def conectar_mentes(sistema: Any, aspectos: Iterable[Aspecto], razonador: Razonador,
                     reparto: Any = None, margen: float = 0.12) -> dict[str, MenteAspecto]:
-    """Conecta cada Aspecto al sistema nervioso a traves de su propia mente."""
+    """Conecta cada Aspecto a traves de su propia mente, conservando sus suscripciones previas."""
     mentes: dict[str, MenteAspecto] = {}
     for aspecto in aspectos:
         mente = MenteAspecto(aspecto, razonador, reparto, margen)
-        sistema.conectar_receptor(aspecto.nombre, mente.recibir_impulso)
+        temas = tuple(sistema.suscripciones.get(aspecto.nombre, ("*",)))
+        minima = sistema.importancia_minima.get(aspecto.nombre, 0.0)
+        sistema.conectar_receptor(aspecto.nombre, mente.recibir_impulso, temas, minima)
         mentes[aspecto.nombre] = mente
     return mentes
