@@ -12,6 +12,8 @@ indecisa. El modelo nunca cambia identidad, límites ni disposiciones.
    `python arrancar_tierra.py --latidos 60 --margen 3 --pausa 3 --tope-hora 300`
 3. Para detenerla: crea un archivo vacío `.mente\PARAR` o pulsa Ctrl+C.
 
+Una tanda de unas decenas de latidos tarda minutos. Una de 500 latidos tardó varias horas con el modelo de 3B, así que conviene empezar con pocos.
+
 ## Opciones del lanzador
 
 | Opción | Qué hace |
@@ -31,12 +33,12 @@ indecisa. El modelo nunca cambia identidad, límites ni disposiciones.
 Por defecto, cuando hay calma Tierra lee conceptos de la Biblioteca, intenta resolver las tareas del banco
 y adopta lo que mejora sin regresiones, bajo Autoridad y con reversa.
 
-- El banco (`mundo_mental/banco_tareas.py`) tiene 20 tareas con pruebas visibles y ocultas: `TAREAS_BASE` (5),
-  `TAREAS_EXTRA` (7) y `TAREAS_DIFICILES` (8).
+- El banco (`mundo_mental/banco_tareas.py`) tiene 40 tareas con pruebas visibles y ocultas: `TAREAS_BASE` (5),
+  `TAREAS_EXTRA` (7), `TAREAS_DIFICILES` (8) y `TAREAS_LOTE2` (20).
 - Cada solución adoptada se guarda como ficha verificada en `.mente/trabajo/libro.jsonl`; los ciclos se
   registran en `.mente/trabajo/ciclos.jsonl`.
-- Una solución que falla las pruebas no deja ficha y la tarea se reintenta en ciclos posteriores.
-- En una ejecución local con Qwen2.5-3B, Tierra adoptó 19 de las 20 tareas.
+- Las tareas ya superadas se omiten en los ciclos siguientes; solo se reintentan las pendientes.
+- En una ejecución local de 500 latidos con Qwen2.5-3B, Tierra adoptó 36 de las 40 tareas.
 
 ## Qué hace cada pieza
 
@@ -49,6 +51,7 @@ y adopta lo que mejora sin regresiones, bajo Autoridad y con reversa.
 ## Límites conocidos
 
 - Solo Tierra está conectada por ahora. Otros Aspectos se añaden con `tejido.incorporar(...)` antes de `conectar_mentes`.
-- Solo se ha probado en ejecuciones cortas; falta una prueba prolongada de horas.
+- Cuando una tarea se le resiste, Tierra repite el mismo intento ciclo tras ciclo: en la prueba de 500 latidos, `fusionar_intervalos`, `segundo_mayor`, `comprimir_texto` y `camel_a_snake` dieron el mismo resultado en los últimos ciclos. No usa el error de la prueba para corregirse ni pasa a otra cosa.
+- El registro de ciclos no guarda el código fallido, así que no se puede diagnosticar a posteriori por qué falla una tarea.
 - Su único entorno es el banco de tareas: no hay entradas reales del exterior.
-- Con 2 núcleos y un modelo de 3B, cada pensamiento puede tardar decenas de segundos.
+- Con un modelo de 3B, cada pensamiento puede tardar decenas de segundos, y las pruebas largas tardan horas.

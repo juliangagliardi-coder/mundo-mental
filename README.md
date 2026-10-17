@@ -38,11 +38,13 @@ python arrancar_tierra.py --latidos 60 --margen 3 --pausa 3 --tope-hora 300
 
 Para detenerla, crea un archivo vacío `.mente\PARAR` o pulsa Ctrl+C. Con `--sin-modelo` funciona solo con fórmulas, sin servidor, y con `--sin-trabajo` solo reflexiona.
 
+Las tandas cortas (unas decenas de latidos) tardan minutos; una de 500 latidos tardó varias horas con el modelo de 3B. Conviene empezar con pocos latidos.
+
 Lo que Tierra aprende queda en `.mente/trabajo/libro.jsonl` (una ficha verificada por cada solución adoptada) y el registro de ciclos en `.mente/trabajo/ciclos.jsonl`.
 
 ### Banco de tareas
 
-El banco tiene 20 tareas de programación, cada una con pruebas visibles y ocultas: 5 básicas, 7 extra y 8 difíciles. Tierra solo adopta una solución si pasa las pruebas y no empeora lo ya adoptado. En una ejecución local con Qwen2.5-3B adoptó 19 de las 20 tareas; la que quedó sin resolver fue `fusionar_intervalos`.
+El banco tiene 40 tareas de programación, cada una con pruebas visibles y ocultas: 5 básicas, 7 extra, 8 difíciles y 20 del segundo lote. Tierra solo adopta una solución si pasa las pruebas y no empeora lo ya adoptado. En una ejecución local de 500 latidos con Qwen2.5-3B adoptó 36 de las 40. Quedaron sin resolver `fusionar_intervalos`, `segundo_mayor`, `comprimir_texto` y `camel_a_snake`: el resultado fue idéntico en los últimos ciclos, así que Tierra se atasca repitiendo el mismo intento.
 
 ## Medir viabilidad
 
@@ -58,4 +60,4 @@ Medir, perfilar y detectar problemas está permitido. Antes de implementar cualq
 
 ## Estado honesto
 
-Biblioteca, Corazón, Calles, Casa de Patrones, Curiosidad, Observación, el validador de evidencia, la Autoridad y Tierra viva tienen prototipos ejecutables. Tierra ya tiene un bucle autónomo con trabajo verificable, pero solo se ha probado en ejecuciones cortas (decenas de latidos): no hay todavía una prueba prolongada de horas. Su único entorno es el banco de tareas; no hay entradas reales del exterior, y solo Tierra está conectada como Aspecto con vida propia. La evolución de código (`--evolucionar`) existe como opción experimental y no se ha usado de forma rutinaria. Viabilidad 0.1 establece una línea base; sus mediciones servirán para proponer cambios concretos, no para introducirlos sin consulta.
+Biblioteca, Corazón, Calles, Casa de Patrones, Curiosidad, Observación, el validador de evidencia, la Autoridad y Tierra viva tienen prototipos ejecutables. Tierra tiene un bucle autónomo con trabajo verificable: una ejecución de 500 latidos (125 ciclos) terminó sin fallos de ciclo, aunque tardó varias horas. Su límite actual es que, cuando una tarea se le resiste, repite el mismo intento sin variar ni usar el error de la prueba. Su único entorno es el banco de tareas; no hay entradas reales del exterior, y solo Tierra está conectada como Aspecto con vida propia. La evolución de código (`--evolucionar`) existe como opción experimental y no se ha usado de forma rutinaria. Viabilidad 0.1 establece una línea base; sus mediciones servirán para proponer cambios concretos, no para introducirlos sin consulta.
