@@ -15,6 +15,10 @@ from .verificador import Verificador
 
 BLOQUE = re.compile(r"```(?:python|py)?\n(.*?)```", re.DOTALL)
 
+PISTA_GENERALIZAR = ("Tu código pasa las pruebas visibles pero falla en otros casos que no se muestran. "
+                     "Revisa los casos límite: entrada vacía, mayúsculas y minúsculas, acentos, signos, "
+                     "espacios y números negativos.")
+
 
 def extraer_codigo(texto: str) -> str:
     coincidencia = BLOQUE.search(texto)
@@ -78,7 +82,12 @@ class RolProgramadora:
             r = self._verificador.verificar(codigo, tarea.visibles)
             historial.append({"origen": "modelo", "intento": numero, "motivo": r.motivo})
             if r.ok:
-                return self._cerrar(tarea, codigo, "modelo", historial, fuentes)
+                ocultas = self._verificador.verificar(codigo, tarea.ocultas)
+                if ocultas.ok or numero == intentos:
+                    return self._cerrar(tarea, codigo, "modelo", historial, fuentes)
+                historial[-1]["motivo"] = "visibles_ok_no_generaliza"
+                error = PISTA_GENERALIZAR
+                continue
             error = f"{r.motivo}: {r.detalle}"
         self._libro.registrar_fracaso(f"programar:{tarea.id}", "sin_solucion", {"intentos": len(historial)})
         return {"estado": "fallida", "tarea_id": tarea.id, "codigo": "", "origen": None,
