@@ -1,29 +1,54 @@
 # Tierra viva
 
 Tierra late de forma continua sobre el `Tejido` y el `MotorDeCiclos`. Cada Aspecto conectado tiene una
-`MenteAspecto` que puede razonar con el modelo local, pero solo cuando la formula de interes esta
-indecisa. El modelo nunca cambia identidad, limites ni disposiciones.
+`MenteAspecto` que puede razonar con el modelo local, pero solo cuando la fórmula de interés está
+indecisa. El modelo nunca cambia identidad, límites ni disposiciones.
 
 ## Arranque (Windows)
 
 1. Enciende el servidor local:
    `llama-server -hf Qwen/Qwen2.5-3B-Instruct-GGUF:Q4_K_M --port 8080 -c 4096`
-2. En otra consola, desde la raiz del repositorio:
-   `python arrancar_tierra.py --latidos 5 --margen 1 --pausa 2`
-3. Para detenerla: crea un archivo vacio `.mente\PARAR` o pulsa Ctrl+C.
+2. En otra consola, desde la raíz del repositorio:
+   `python arrancar_tierra.py --latidos 60 --margen 3 --pausa 3 --tope-hora 300`
+3. Para detenerla: crea un archivo vacío `.mente\PARAR` o pulsa Ctrl+C.
 
-`--sin-modelo` ejecuta todo con las formulas, sin servidor. `--margen 1` consulta al modelo en cada impulso
-(mas lento); el valor por defecto (0.12) solo consulta cuando la formula esta cerca del umbral.
+## Opciones del lanzador
 
-## Que hace cada pieza
+| Opción | Qué hace |
+|---|---|
+| `--latidos N` | Número de latidos; 0 (por defecto) = hasta que se cree `PARAR` |
+| `--pausa S` | Segundos entre latidos (por defecto 5) |
+| `--cada N` | Latidos tranquilos entre ciclos de trabajo (por defecto 3) |
+| `--margen M` | 1 = consultar al modelo en cada impulso (más lento); por defecto 0.12, solo cuando la fórmula está cerca del umbral |
+| `--tope-hora N` | Máximo de llamadas por hora al modelo para el trabajo autónomo (por defecto 60) |
+| `--sin-modelo` | Todo con fórmulas, sin servidor |
+| `--sin-trabajo` | Solo reflexión, sin trabajo autónomo |
+| `--raiz`, `--url`, `--modelo` | Carpeta de memoria (`.mente`), servidor local y nombre del modelo |
+| `--evolucionar RUTA --objetivo "..."` | Opcional y experimental: Tierra pide al modelo un parche y una prueba de mejora para esa ruta, y lo promueve solo si conserva la suite completa y demuestra la mejora |
 
-- `MotorDeCiclos` lleva el reloj, los limites y la persistencia (`.mente/motor.json`).
+## Trabajo autónomo
+
+Por defecto, cuando hay calma Tierra lee conceptos de la Biblioteca, intenta resolver las tareas del banco
+y adopta lo que mejora sin regresiones, bajo Autoridad y con reversa.
+
+- El banco (`mundo_mental/banco_tareas.py`) tiene 20 tareas con pruebas visibles y ocultas: `TAREAS_BASE` (5),
+  `TAREAS_EXTRA` (7) y `TAREAS_DIFICILES` (8).
+- Cada solución adoptada se guarda como ficha verificada en `.mente/trabajo/libro.jsonl`; los ciclos se
+  registran en `.mente/trabajo/ciclos.jsonl`.
+- Una solución que falla las pruebas no deja ficha y la tarea se reintenta en ciclos posteriores.
+- En una ejecución local con Qwen2.5-3B, Tierra adoptó 19 de las 20 tareas.
+
+## Qué hace cada pieza
+
+- `MotorDeCiclos` lleva el reloj, los límites y la persistencia (`.mente/motor.json`).
 - `RepartoRazonamiento` limita los pensamientos del modelo: 1 por latido y por aspecto, 120 por hora.
 - `ReflexionTierra` hace que Tierra se plantee una pregunta cuando hay calma, para que el modelo tenga algo que decidir.
+- `CicloTierra` ejecuta el trabajo sobre el Libro y el banco de tareas, con Autoridad.
 - El razonador de decisiones usa `max_tokens=8`; el general, 256. Solo se aceptan servidores `http://127.0.0.1` o `localhost`.
 
-## Limites conocidos
+## Límites conocidos
 
-- Solo Tierra esta conectada por ahora. Otros Aspectos se anaden con `tejido.incorporar(...)` antes de `conectar_mentes`.
-- No se conecta aun `CicloTierra` (necesita Libro y banco de tareas).
-- Con 2 nucleos y un modelo de 3B, cada pensamiento puede tardar decenas de segundos.
+- Solo Tierra está conectada por ahora. Otros Aspectos se añaden con `tejido.incorporar(...)` antes de `conectar_mentes`.
+- Solo se ha probado en ejecuciones cortas; falta una prueba prolongada de horas.
+- Su único entorno es el banco de tareas: no hay entradas reales del exterior.
+- Con 2 núcleos y un modelo de 3B, cada pensamiento puede tardar decenas de segundos.
