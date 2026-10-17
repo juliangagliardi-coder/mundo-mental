@@ -2,6 +2,9 @@
 
 No es un ejecutor de código hostil. Los parches proceden de Tierra, se limitan a una ruta
 permitida y se prueban en una copia temporal del repositorio antes de tocar el árbol estable.
+
+Un cambio solo se promueve si (1) conserva la suite completa y (2), cuando se aporta una
+"prueba de mejora", esa prueba falla en la base y pasa en la candidata.
 """
 
 from __future__ import annotations
@@ -13,17 +16,12 @@ import sys
 import tempfile
 import time
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from .autoridad import Autoridad
 from .tierra import ruta_protegida
-
-
-def _ahora() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 @dataclass(frozen=True)
@@ -50,7 +48,7 @@ class ResultadoEvolucion:
 
 
 class Evolucion:
-    """Promueve cambios de un archivo solo si la suite completa no empeora."""
+    """Promueve cambios de un archivo solo si la suite no empeora y la mejora se demuestra."""
 
     ZONA = "evolucion"
 
@@ -80,12 +78,11 @@ class Evolucion:
             raise FileNotFoundError(destino)
         return destino
 
-    def _ejecutar_suite(self, raiz: Path) -> ResultadoSuite:
+    def _correr(self, comando: list[str], raiz: Path) -> ResultadoSuite:
         inicio = time.monotonic()
         try:
             proceso = subprocess.run(
-                [sys.executable, "-m", "unittest", "discover", "-s", "tests"], cwd=raiz,
-                capture_output=True, text=True, timeout=self.tiempo_max,
+                comando, cwd=raiz, capture_output=True, text=True, timeout=self.tiempo_max,
                 env={"PYTHONHASHSEED": "0", "PYTHONIOENCODING": "utf-8"},
             )
         except subprocess.TimeoutExpired:
@@ -93,6 +90,12 @@ class Evolucion:
         salida = ((proceso.stdout or "") + "\n" + (proceso.stderr or "")).strip()[-4000:]
         return ResultadoSuite(proceso.returncode == 0, proceso.returncode, salida,
                               time.monotonic() - inicio, "ok" if proceso.returncode == 0 else "pruebas")
+
+    def _ejecutar_suite(self, raiz: Path) -> ResultadoSuite:
+        return self._correr([sys.executable, "-m", "unittest", "discover", "-s", "tests"], raiz)
+
+    def _ejecutar_mejora(self, raiz: Path, codigo: str) -> ResultadoSuite:
+        return self._correr([sys.executable, "-c", codigo], raiz)
 
     def _registrar(self, resultado: ResultadoEvolucion) -> None:
         self.ruta_registro.parent.mkdir(parents=True, exist_ok=True)
@@ -105,45 +108,51 @@ class Evolucion:
         with self.ruta_registro.open(encoding="utf-8") as archivo:
             return [json.loads(linea) for linea in archivo if linea.strip()]
 
-    def proponer(self, ruta: str, contenido: str, actor: str = "Tierra") -> ResultadoEvolucion:
+    def proponer(self, ruta: str, contenido: str, actor: str = "Tierra", mejora: str = "") -> ResultadoEvolucion:
         identificador = str(uuid4())
         vacio = ResultadoSuite(False, -1, "", 0.0, "no_ejecutada")
-        try:
-            destino = self._ruta(ruta)
-        except (PermissionError, FileNotFoundError) as error:
-            resultado = ResultadoEvolucion(identificador, ruta, "rechazada", "ruta", vacio, detalle=str(error))
-            self._registrar(resultado)
-            return resultado
-        if len(contenido.encode("utf-8")) > self.max_bytes_parche:
-            resultado = ResultadoEvolucion(identificador, ruta, "rechazada", "tamano", vacio,
-                                            detalle=f"más de {self.max_bytes_parche} bytes")
-            self._registrar(resultado)
-            return resultado
-        try:
-            compile(contenido, ruta, "exec")
-        except SyntaxError as error:
-            resultado = ResultadoEvolucion(identificador, ruta, "rechazada", "sintaxis", vacio,
-                                            detalle=f"línea {error.lineno}: {error.msg}")
+
+        def cerrar(estado: str, motivo: str, baseline: ResultadoSuite = vacio,
+                   candidata: ResultadoSuite | None = None, detalle: str = "") -> ResultadoEvolucion:
+            resultado = ResultadoEvolucion(identificador, ruta, estado, motivo, baseline, candidata, detalle)
             self._registrar(resultado)
             return resultado
 
+        try:
+            destino = self._ruta(ruta)
+        except (PermissionError, FileNotFoundError) as error:
+            return cerrar("rechazada", "ruta", detalle=str(error))
+        if len(contenido.encode("utf-8")) > self.max_bytes_parche:
+            return cerrar("rechazada", "tamano", detalle=f"más de {self.max_bytes_parche} bytes")
+        try:
+            compile(contenido, ruta, "exec")
+        except SyntaxError as error:
+            return cerrar("rechazada", "sintaxis", detalle=f"línea {error.lineno}: {error.msg}")
+        if mejora.strip():
+            try:
+                compile(mejora, "mejora", "exec")
+            except SyntaxError as error:
+                return cerrar("rechazada", "sintaxis_mejora", detalle=f"línea {error.lineno}: {error.msg}")
+
         baseline = self._ejecutar_suite(self.raiz)
         if not baseline.ok:
-            resultado = ResultadoEvolucion(identificador, ruta, "rechazada", "baseline", baseline,
-                                            detalle="La suite estable falla; no hay referencia fiable")
-            self._registrar(resultado)
-            return resultado
+            return cerrar("rechazada", "baseline", baseline,
+                          detalle="La suite estable falla; no hay referencia fiable")
+        if mejora.strip() and self._ejecutar_mejora(self.raiz, mejora).ok:
+            return cerrar("rechazada", "ya_cumple", baseline,
+                          detalle="La prueba de mejora ya pasa en la base: no demuestra nada")
+
         with tempfile.TemporaryDirectory(prefix="mundo_mental_candidata_") as temporal:
             copia = Path(temporal) / "repositorio"
             shutil.copytree(self.raiz, copia, ignore=shutil.ignore_patterns(".git", ".mente", "__pycache__", "*.pyc"))
-            destino_copia = copia / destino.relative_to(self.raiz)
-            destino_copia.write_text(contenido, encoding="utf-8")
+            (copia / destino.relative_to(self.raiz)).write_text(contenido, encoding="utf-8")
             candidata = self._ejecutar_suite(copia)
+            prueba = self._ejecutar_mejora(copia, mejora) if candidata.ok and mejora.strip() else None
         if not candidata.ok:
-            resultado = ResultadoEvolucion(identificador, ruta, "rechazada", "regresion", baseline, candidata,
-                                            "La candidata no conserva la suite completa")
-            self._registrar(resultado)
-            return resultado
+            return cerrar("rechazada", "regresion", baseline, candidata, "La candidata no conserva la suite completa")
+        if prueba is not None and not prueba.ok:
+            return cerrar("rechazada", "no_mejora", baseline, candidata,
+                          f"La prueba de mejora falla en la candidata: {prueba.salida[-300:]}")
 
         original = destino.read_text(encoding="utf-8")
 
@@ -154,11 +163,9 @@ class Evolucion:
             destino.write_text(original, encoding="utf-8")
 
         if self.autoridad is None:
-            estado, motivo = "lista", "sin_autoridad"
-        else:
-            decision = self.autoridad.actuar(actor, self.ZONA, f"promover:{ruta}", ejecutar, deshacer)
-            estado = "promovida" if decision["resultado"] == "ejecutada" else decision["resultado"]
-            motivo = "suite_conservada" if estado == "promovida" else decision["resultado"]
-        resultado = ResultadoEvolucion(identificador, ruta, estado, motivo, baseline, candidata)
-        self._registrar(resultado)
-        return resultado
+            return cerrar("lista", "sin_autoridad", baseline, candidata)
+        decision = self.autoridad.actuar(actor, self.ZONA, f"promover:{ruta}", ejecutar, deshacer)
+        promovida = decision["resultado"] == "ejecutada"
+        return cerrar("promovida" if promovida else decision["resultado"],
+                      ("mejora_demostrada" if mejora.strip() else "suite_conservada") if promovida
+                      else decision["resultado"], baseline, candidata)
