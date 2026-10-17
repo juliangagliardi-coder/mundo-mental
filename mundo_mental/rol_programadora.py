@@ -73,6 +73,7 @@ class RolProgramadora:
             if r.ok:
                 return self._cerrar(tarea, ficha.ejemplo, "libro", historial, fuentes)
         error = ""
+        ultimo_bueno = ""
         for numero in range(1, intentos + 1):
             texto = self._razonador.responder(self._prompt(tarea, fichas, error), tarea.id)
             codigo = extraer_codigo(texto)
@@ -86,9 +87,12 @@ class RolProgramadora:
                 if ocultas.ok or numero == intentos:
                     return self._cerrar(tarea, codigo, "modelo", historial, fuentes)
                 historial[-1]["motivo"] = "visibles_ok_no_generaliza"
+                ultimo_bueno = codigo
                 error = PISTA_GENERALIZAR
                 continue
             error = f"{r.motivo}: {r.detalle}"
+        if ultimo_bueno:
+            return self._cerrar(tarea, ultimo_bueno, "modelo", historial, fuentes)
         self._libro.registrar_fracaso(f"programar:{tarea.id}", "sin_solucion", {"intentos": len(historial)})
         return {"estado": "fallida", "tarea_id": tarea.id, "codigo": "", "origen": None,
                 "intentos": historial, "fuentes": fuentes, "candidata_lista": False,
