@@ -201,10 +201,273 @@ TAREAS_DIFICILES = (
     ),
 )
 
+TAREAS_LOTE2 = (
+    Tarea("suma_digitos", "Suma los dígitos de un entero; los negativos se tratan por su valor absoluto.", "suma_digitos(n)",
+        "assert suma_digitos(123) == 6",
+        """assert suma_digitos(0) == 0
+assert suma_digitos(-45) == 9
+assert suma_digitos(1000) == 1
+assert suma_digitos(99999) == 45""",
+        """def suma_digitos(n):
+    return sum(int(c) for c in str(abs(n)))"""),
+    Tarea("es_anagrama", "Indica si dos textos son anagramas ignorando mayúsculas y espacios.", "es_anagrama(a, b)",
+        "assert es_anagrama('Roma', 'amor')",
+        """assert es_anagrama('a gentleman', 'elegant man')
+assert not es_anagrama('ab', 'abc')
+assert es_anagrama('', '')
+assert not es_anagrama('aab', 'abb')""",
+        """def es_anagrama(a, b):
+    def limpio(t):
+        return sorted(c for c in t.lower() if not c.isspace())
+    return limpio(a) == limpio(b)"""),
+    Tarea("mcd", "Devuelve el máximo común divisor de dos enteros no negativos; mcd(0, 0) = 0.", "mcd(a, b)",
+        "assert mcd(12, 18) == 6",
+        """assert mcd(0, 5) == 5
+assert mcd(7, 13) == 1
+assert mcd(0, 0) == 0
+assert mcd(100, 75) == 25""",
+        """def mcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a"""),
+    Tarea("mcm", "Devuelve el mínimo común múltiplo de dos enteros positivos.", "mcm(a, b)",
+        "assert mcm(4, 6) == 12",
+        """assert mcm(1, 5) == 5
+assert mcm(7, 13) == 91
+assert mcm(12, 18) == 36
+assert mcm(5, 5) == 5""",
+        """def mcm(a, b):
+    x, y = a, b
+    while y:
+        x, y = y, x % y
+    return a * b // x"""),
+    Tarea("entero_a_binario", "Devuelve la representación binaria de un entero n >= 0 como texto, sin prefijo.", "entero_a_binario(n)",
+        "assert entero_a_binario(5) == '101'",
+        """assert entero_a_binario(0) == '0'
+assert entero_a_binario(1) == '1'
+assert entero_a_binario(255) == '11111111'
+assert entero_a_binario(1024) == '10000000000'""",
+        """def entero_a_binario(n):
+    return bin(n)[2:]"""),
+    Tarea("comprimir_texto", "Comprime un texto por repeticiones consecutivas: 'aaabcc' pasa a 'a3b1c2'.", "comprimir_texto(texto)",
+        "assert comprimir_texto('aaabcc') == 'a3b1c2'",
+        """assert comprimir_texto('') == ''
+assert comprimir_texto('a') == 'a1'
+assert comprimir_texto('aabbaa') == 'a2b2a2'
+assert comprimir_texto('zzzzzzzzzzzz') == 'z12'""",
+        """def comprimir_texto(texto):
+    salida = []
+    i = 0
+    while i < len(texto):
+        j = i
+        while j < len(texto) and texto[j] == texto[i]:
+            j += 1
+        salida.append(texto[i] + str(j - i))
+        i = j
+    return ''.join(salida)"""),
+    Tarea("interseccion_ordenada", "Devuelve los elementos comunes de dos listas, sin repetir y en orden ascendente.", "interseccion_ordenada(a, b)",
+        "assert interseccion_ordenada([1, 2, 2, 3], [2, 3, 4]) == [2, 3]",
+        """assert interseccion_ordenada([], [1]) == []
+assert interseccion_ordenada([1, 1], [1, 1]) == [1]
+assert interseccion_ordenada([5, 3, 1], [1, 3, 5]) == [1, 3, 5]
+assert interseccion_ordenada([1, 2], [3, 4]) == []""",
+        """def interseccion_ordenada(a, b):
+    return sorted(set(a) & set(b))"""),
+    Tarea("segundo_mayor", "Devuelve el segundo valor distinto más grande de una lista, o None si no existe.", "segundo_mayor(numeros)",
+        "assert segundo_mayor([3, 1, 4, 1, 5]) == 4",
+        """assert segundo_mayor([]) is None
+assert segundo_mayor([2, 2]) is None
+assert segundo_mayor([1, 2]) == 1
+assert segundo_mayor([5, 5, 4]) == 4
+assert segundo_mayor([-1, -2, -3]) == -2""",
+        """def segundo_mayor(numeros):
+    distintos = sorted(set(numeros), reverse=True)
+    return distintos[1] if len(distintos) > 1 else None"""),
+    Tarea("paginar", "Divide una lista en páginas de tamaño tam; si tam <= 0 lanza ValueError.", "paginar(lista, tam)",
+        "assert paginar([1, 2, 3, 4, 5], 2) == [[1, 2], [3, 4], [5]]",
+        """assert paginar([], 3) == []
+assert paginar([1, 2], 5) == [[1, 2]]
+try:
+    paginar([1], 0)
+    raise AssertionError('debe fallar')
+except ValueError:
+    pass""",
+        """def paginar(lista, tam):
+    if tam <= 0:
+        raise ValueError('tam debe ser positivo')
+    return [lista[i:i + tam] for i in range(0, len(lista), tam)]"""),
+    Tarea("contar_letras", "Devuelve un diccionario con la frecuencia de cada letra en minúscula; ignora lo que no sea letra.", "contar_letras(texto)",
+        "assert contar_letras('Hola') == {'h': 1, 'o': 1, 'l': 1, 'a': 1}",
+        """assert contar_letras('') == {}
+assert contar_letras('a1 A!') == {'a': 2}
+assert contar_letras('ñu') == {'ñ': 1, 'u': 1}""",
+        """def contar_letras(texto):
+    cuenta = {}
+    for c in texto.lower():
+        if c.isalpha():
+            cuenta[c] = cuenta.get(c, 0) + 1
+    return cuenta"""),
+    Tarea("transponer", "Devuelve la transpuesta de una matriz rectangular (lista de listas); la matriz vacía da []. No modifica la entrada.", "transponer(matriz)",
+        "assert transponer([[1, 2, 3], [4, 5, 6]]) == [[1, 4], [2, 5], [3, 6]]",
+        """assert transponer([]) == []
+assert transponer([[1]]) == [[1]]
+assert transponer([[1], [2], [3]]) == [[1, 2, 3]]
+m = [[1, 2], [3, 4]]
+transponer(m)
+assert m == [[1, 2], [3, 4]]""",
+        """def transponer(matriz):
+    return [list(fila) for fila in zip(*matriz)]"""),
+    Tarea("busqueda_binaria", "Devuelve el índice de x en una lista ordenada ascendente, o -1 si no está.", "busqueda_binaria(lista, x)",
+        "assert busqueda_binaria([1, 3, 5, 7], 5) == 2",
+        """assert busqueda_binaria([], 1) == -1
+assert busqueda_binaria([1], 1) == 0
+assert busqueda_binaria([1, 3, 5, 7], 8) == -1
+assert busqueda_binaria([1, 3, 5, 7], 1) == 0
+assert busqueda_binaria([1, 3, 5, 7], 7) == 3
+assert busqueda_binaria(list(range(0, 10000, 2)), 4998) == 2499""",
+        """def busqueda_binaria(lista, x):
+    lo, hi = 0, len(lista) - 1
+    while lo <= hi:
+        medio = (lo + hi) // 2
+        if lista[medio] == x:
+            return medio
+        if lista[medio] < x:
+            lo = medio + 1
+        else:
+            hi = medio - 1
+    return -1"""),
+    Tarea("fizzbuzz", "Devuelve una lista de n textos del 1 al n: 'Fizz' si es múltiplo de 3, 'Buzz' de 5, 'FizzBuzz' de ambos.", "fizzbuzz(n)",
+        "assert fizzbuzz(5) == ['1', '2', 'Fizz', '4', 'Buzz']",
+        """assert fizzbuzz(0) == []
+assert fizzbuzz(15)[-1] == 'FizzBuzz'
+assert fizzbuzz(15)[2] == 'Fizz'
+assert fizzbuzz(10)[9] == 'Buzz'""",
+        """def fizzbuzz(n):
+    salida = []
+    for i in range(1, n + 1):
+        if i % 15 == 0:
+            salida.append('FizzBuzz')
+        elif i % 3 == 0:
+            salida.append('Fizz')
+        elif i % 5 == 0:
+            salida.append('Buzz')
+        else:
+            salida.append(str(i))
+    return salida"""),
+    Tarea("camel_a_snake", "Convierte un identificador camelCase a snake_case: cada mayúscula (salvo al inicio) pasa a '_' más su minúscula.", "camel_a_snake(texto)",
+        "assert camel_a_snake('miVariableLarga') == 'mi_variable_larga'",
+        """assert camel_a_snake('') == ''
+assert camel_a_snake('a') == 'a'
+assert camel_a_snake('unaDosTres') == 'una_dos_tres'
+assert camel_a_snake('Casa') == 'casa'
+assert camel_a_snake('aB') == 'a_b'""",
+        """def camel_a_snake(texto):
+    salida = []
+    for i, c in enumerate(texto):
+        if c.isupper():
+            if i > 0:
+                salida.append('_')
+            salida.append(c.lower())
+        else:
+            salida.append(c)
+    return ''.join(salida)"""),
+    Tarea("numero_a_romano", "Convierte un entero entre 1 y 3999 a número romano en mayúsculas.", "numero_a_romano(n)",
+        "assert numero_a_romano(14) == 'XIV'",
+        """assert numero_a_romano(4) == 'IV'
+assert numero_a_romano(9) == 'IX'
+assert numero_a_romano(1994) == 'MCMXCIV'
+assert numero_a_romano(2026) == 'MMXXVI'
+assert numero_a_romano(3999) == 'MMMCMXCIX'
+assert numero_a_romano(444) == 'CDXLIV'""",
+        """def numero_a_romano(n):
+    tabla = [(1000, 'M'), (900, 'CM'), (500, 'D'), (400, 'CD'), (100, 'C'), (90, 'XC'),
+             (50, 'L'), (40, 'XL'), (10, 'X'), (9, 'IX'), (5, 'V'), (4, 'IV'), (1, 'I')]
+    salida = []
+    for valor, simbolo in tabla:
+        while n >= valor:
+            salida.append(simbolo)
+            n -= valor
+    return ''.join(salida)"""),
+    Tarea("es_bisiesto", "Indica si un año del calendario gregoriano es bisiesto.", "es_bisiesto(anio)",
+        "assert es_bisiesto(2024)\nassert not es_bisiesto(1900)",
+        """assert es_bisiesto(2000)
+assert not es_bisiesto(2100)
+assert not es_bisiesto(2023)
+assert es_bisiesto(1600)""",
+        """def es_bisiesto(anio):
+    return anio % 4 == 0 and (anio % 100 != 0 or anio % 400 == 0)"""),
+    Tarea("hay_par_con_suma", "Indica si existen dos elementos en posiciones distintas de la lista cuya suma sea el objetivo.", "hay_par_con_suma(numeros, objetivo)",
+        "assert hay_par_con_suma([2, 7, 11, 15], 9)",
+        """assert not hay_par_con_suma([], 1)
+assert not hay_par_con_suma([5], 10)
+assert hay_par_con_suma([5, 5], 10)
+assert not hay_par_con_suma([1, 2, 3], 7)
+assert hay_par_con_suma([-1, 1], 0)""",
+        """def hay_par_con_suma(numeros, objetivo):
+    vistos = set()
+    for x in numeros:
+        if objetivo - x in vistos:
+            return True
+        vistos.add(x)
+    return False"""),
+    Tarea("moda", "Devuelve el valor más frecuente de una lista; en empate el menor; None si está vacía.", "moda(numeros)",
+        "assert moda([1, 2, 2, 3]) == 2",
+        """assert moda([]) is None
+assert moda([1, 1, 2, 2]) == 1
+assert moda([5]) == 5
+assert moda([3, 3, 1, 1, 2]) == 1
+assert moda([-1, -1, 0]) == -1""",
+        """def moda(numeros):
+    if not numeros:
+        return None
+    cuenta = {}
+    for x in numeros:
+        cuenta[x] = cuenta.get(x, 0) + 1
+    return min(cuenta, key=lambda v: (-cuenta[v], v))"""),
+    Tarea("prefijo_comun", "Devuelve el prefijo común más largo de una lista de palabras, o '' si no hay.", "prefijo_comun(palabras)",
+        "assert prefijo_comun(['flor', 'flores', 'flota']) == 'flo'",
+        """assert prefijo_comun([]) == ''
+assert prefijo_comun(['a']) == 'a'
+assert prefijo_comun(['abc', 'xyz']) == ''
+assert prefijo_comun(['igual', 'igual']) == 'igual'
+assert prefijo_comun(['', 'a']) == ''""",
+        """def prefijo_comun(palabras):
+    if not palabras:
+        return ''
+    prefijo = palabras[0]
+    for p in palabras[1:]:
+        while not p.startswith(prefijo):
+            prefijo = prefijo[:-1]
+    return prefijo"""),
+    Tarea("fusionar_ordenadas", "Fusiona dos listas ordenadas ascendentes en una sola lista ordenada. No modifica las entradas.", "fusionar_ordenadas(a, b)",
+        "assert fusionar_ordenadas([1, 3, 5], [2, 4]) == [1, 2, 3, 4, 5]",
+        """assert fusionar_ordenadas([], []) == []
+assert fusionar_ordenadas([], [1]) == [1]
+assert fusionar_ordenadas([1, 1], [1]) == [1, 1, 1]
+assert fusionar_ordenadas([1, 2], [3, 4]) == [1, 2, 3, 4]
+x = [1, 3]
+y = [2]
+fusionar_ordenadas(x, y)
+assert x == [1, 3] and y == [2]""",
+        """def fusionar_ordenadas(a, b):
+    i = j = 0
+    salida = []
+    while i < len(a) and j < len(b):
+        if a[i] <= b[j]:
+            salida.append(a[i])
+            i += 1
+        else:
+            salida.append(b[j])
+            j += 1
+    salida.extend(a[i:])
+    salida.extend(b[j:])
+    return salida"""),
+)
+
 
 class BancoTareas:
     def __init__(self, tareas: tuple[Tarea, ...] | None = None, verificador: Verificador | None = None):
-        tareas = TAREAS_BASE + TAREAS_EXTRA + TAREAS_DIFICILES if tareas is None else tareas
+        tareas = TAREAS_BASE + TAREAS_EXTRA + TAREAS_DIFICILES + TAREAS_LOTE2 if tareas is None else tareas
         self._tareas = {t.id: t for t in tareas}
         self._verificador = verificador or Verificador()
 
