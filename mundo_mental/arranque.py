@@ -5,6 +5,10 @@ Para detenerlo: crear el archivo .mente/PARAR  (o Ctrl+C).
 
 Por defecto, cuando hay calma Tierra trabaja sola: lee conceptos de la Biblioteca, resuelve las
 tareas del banco y adopta lo que mejora sin regresiones, bajo Autoridad y con reversa.
+
+Evolucion de codigo (opcional): --evolucionar RUTA --objetivo "..." hace que cada cierto numero de
+ciclos Tierra pida al modelo un parche y su prueba de mejora para esa ruta, y lo promueva solo si
+conserva la suite completa y demuestra la mejora.
 """
 
 from __future__ import annotations
@@ -21,12 +25,14 @@ from .autoridad import Autoridad
 from .banco_tareas import BancoTareas
 from .biblioteca import Biblioteca
 from .ciclo_tierra import CicloTierra, construir_tierra
+from .evolucion import Evolucion
 from .libro import Libro
 from .mente_aspecto import MenteAspecto, conectar_mentes
 from .motor import MotorDeCiclos
 from .observacion import Centinela, Guardian
 from .razonador import ConfigRazonador, RazonadorHTTP
 from .reparto_razonamiento import RepartoRazonamiento
+from .rol_evolutiva import RolEvolutiva
 from .tejido import TejidoMental
 from .tierra import Razonador, RazonadorNulo, crear_tierra
 from .tierra_viva import TierraViva
@@ -75,15 +81,25 @@ class RazonadorLimitado:
 
 
 class CicloCompuesto:
-    """Primero la reflexion (barata, mantiene el latido de conciencia); despues el trabajo."""
+    """Primero la reflexion (barata); despues el trabajo; y, cada N ciclos, la evolucion de codigo."""
 
-    def __init__(self, reflexion: ReflexionTierra, trabajo: CicloTierra):
+    def __init__(self, reflexion: ReflexionTierra, trabajo: CicloTierra,
+                 evolutiva: RolEvolutiva | None = None, cada_evolucion: int = 10):
+        if cada_evolucion <= 0:
+            raise ValueError("cada_evolucion debe ser positivo")
         self.reflexion = reflexion
         self.trabajo = trabajo
+        self.evolutiva = evolutiva
+        self.cada_evolucion = cada_evolucion
+        self.ciclos = 0
 
     def ejecutar(self, conceptos: dict[str, Any], tareas: list[str], presupuesto: int) -> dict[str, Any]:
         self.reflexion.ejecutar(conceptos, tareas, presupuesto)
-        return self.trabajo.ejecutar(conceptos, tareas, presupuesto)
+        informe = self.trabajo.ejecutar(conceptos, tareas, presupuesto)
+        self.ciclos += 1
+        if self.evolutiva is not None and self.ciclos % self.cada_evolucion == 0:
+            informe["evolucion"] = self.evolutiva.ejecutar({})
+        return informe
 
 
 def construir_razonadores(url: str = URL_LOCAL, modelo: str = "local",
@@ -113,12 +129,16 @@ class Mundo:
     trabajo: CicloTierra | None = None
     autoridad: Autoridad | None = None
     limitador: RazonadorLimitado | None = None
+    evolucion: Evolucion | None = None
+    evolutiva: RolEvolutiva | None = None
 
 
 def construir_mundo(raiz: str | Path, general: Razonador, decisiones: Razonador, pausa: float = 5.0,
                     cada_latidos: int = 3, margen: float = 0.12,
                     dormir: Callable[[float], None] = time.sleep, trabajo: bool = False,
-                    tope_hora: int = TOPE_HORA, reloj: Callable[[], float] = time.monotonic) -> Mundo:
+                    tope_hora: int = TOPE_HORA, reloj: Callable[[], float] = time.monotonic,
+                    repo: str | Path = ".", rutas_evolucion: tuple[str, ...] = (), objetivo: str = "",
+                    cada_evolucion: int = 10) -> Mundo:
     raiz = Path(raiz)
     nucleo = crear_tierra(raiz, general)
     tejido = TejidoMental()
@@ -130,7 +150,7 @@ def construir_mundo(raiz: str | Path, general: Razonador, decisiones: Razonador,
     ciclo: Any = reflexion
     conceptos: Any = None
     tareas: tuple[str, ...] = ()
-    ciclo_trabajo = autoridad = limitador = None
+    ciclo_trabajo = autoridad = limitador = evolucion = evolutiva = None
     if trabajo:
         raiz_trabajo = raiz / "trabajo"
         verificador = Verificador()
@@ -141,12 +161,16 @@ def construir_mundo(raiz: str | Path, general: Razonador, decisiones: Razonador,
         guardian = Guardian(raiz_trabajo)
         autoridad = Autoridad(raiz_trabajo, Centinela(guardian.buzon), guardian)
         ciclo_trabajo = CicloTierra(nucleo_trabajo, banco, raiz_trabajo / "ciclos.jsonl", autoridad)
-        ciclo = CicloCompuesto(reflexion, ciclo_trabajo)
+        if rutas_evolucion:
+            evolucion = Evolucion(repo, autoridad, ruta_registro=raiz_trabajo / "evolucion.jsonl", tiempo_max=120.0)
+            evolutiva = RolEvolutiva(evolucion, limitador, tuple(rutas_evolucion), objetivo)
+        ciclo = CicloCompuesto(reflexion, ciclo_trabajo, evolutiva, cada_evolucion)
         conceptos = Biblioteca(raiz).consolidar
         tareas = banco.ids()
     vida = TierraViva(nucleo.aspecto, tejido.sistema, reparto, raiz, ciclo=ciclo, conceptos=conceptos,
                       tareas=tareas, cada_latidos=cada_latidos, pausa=pausa, dormir=dormir, motor=motor)
-    return Mundo(vida, tejido, motor, mentes, reparto, reflexion, ciclo_trabajo, autoridad, limitador)
+    return Mundo(vida, tejido, motor, mentes, reparto, reflexion, ciclo_trabajo, autoridad, limitador,
+                 evolucion, evolutiva)
 
 
 def main(argumentos: list[str] | None = None) -> int:
@@ -162,12 +186,23 @@ def main(argumentos: list[str] | None = None) -> int:
     analizador.add_argument("--tope-hora", type=int, default=TOPE_HORA,
                             help="maximo de llamadas por hora al modelo para el trabajo autonomo")
     analizador.add_argument("--sin-trabajo", action="store_true", help="solo reflexion, sin trabajo autonomo")
+    analizador.add_argument("--evolucionar", action="append", default=[], metavar="RUTA",
+                            help="ruta de codigo que Tierra puede intentar mejorar (repetible)")
+    analizador.add_argument("--objetivo", default="", help="que debe mejorar la evolucion de codigo")
+    analizador.add_argument("--repo", default=".", help="raiz del repositorio a evolucionar")
+    analizador.add_argument("--cada-evolucion", type=int, default=10, help="ciclos de trabajo entre intentos de evolucion")
     analizador.add_argument("--sin-modelo", action="store_true")
     args = analizador.parse_args(argumentos)
+    if args.evolucionar and not args.objetivo.strip():
+        analizador.error("--evolucionar requiere --objetivo")
+    if args.evolucionar and args.sin_trabajo:
+        analizador.error("--evolucionar no es compatible con --sin-trabajo")
 
     general, decisiones = construir_razonadores(args.url, args.modelo, args.sin_modelo)
     mundo = construir_mundo(args.raiz, general, decisiones, args.pausa, args.cada, args.margen,
-                            trabajo=not args.sin_trabajo, tope_hora=args.tope_hora)
+                            trabajo=not args.sin_trabajo, tope_hora=args.tope_hora, repo=args.repo,
+                            rutas_evolucion=tuple(args.evolucionar), objetivo=args.objetivo,
+                            cada_evolucion=args.cada_evolucion)
     print(f"Tierra viva. Raiz: {args.raiz}. Para detenerla: crear {Path(args.raiz) / 'PARAR'} o Ctrl+C.")
     try:
         hechos = mundo.vida.vivir(args.latidos or None)
@@ -181,4 +216,8 @@ def main(argumentos: list[str] | None = None) -> int:
           f"Pensamientos concedidos/denegados: {mundo.reparto.concedidos}/{mundo.reparto.denegados}.")
     if mundo.limitador is not None:
         print(f"Llamadas de trabajo denegadas por el tope horario: {mundo.limitador.denegadas}.")
+    if mundo.evolucion is not None:
+        historial = mundo.evolucion.historial()
+        promovidas = sum(1 for h in historial if h["estado"] == "promovida")
+        print(f"Intentos de evolucion: {len(historial)}. Promovidos: {promovidas}.")
     return 0
