@@ -111,10 +111,100 @@ TAREAS_EXTRA = (
     ),
 )
 
+TAREAS_DIFICILES = (
+    Tarea(
+        "parentesis_balanceados",
+        "Indica si los paréntesis (), corchetes [] y llaves {} de un texto están balanceados y bien anidados; ignora los demás caracteres.",
+        "parentesis_balanceados(texto)",
+        "assert parentesis_balanceados('([]{})')\nassert not parentesis_balanceados('(]')",
+        "assert parentesis_balanceados('')\nassert parentesis_balanceados('a(b[c]d)e')\nassert not parentesis_balanceados('((')\n"
+        "assert not parentesis_balanceados('())')\nassert not parentesis_balanceados(')(')\nassert not parentesis_balanceados('{[}]')",
+        "def parentesis_balanceados(texto):\n    pares = {')': '(', ']': '[', '}': '{'}\n    pila = []\n    for c in texto:\n"
+        "        if c in '([{':\n            pila.append(c)\n        elif c in pares:\n"
+        "            if not pila or pila.pop() != pares[c]:\n                return False\n    return not pila",
+    ),
+    Tarea(
+        "romano_a_entero",
+        "Convierte un número romano válido en mayúsculas (I, V, X, L, C, D, M) a entero.",
+        "romano_a_entero(texto)",
+        "assert romano_a_entero('XIV') == 14",
+        "assert romano_a_entero('III') == 3\nassert romano_a_entero('IV') == 4\nassert romano_a_entero('IX') == 9\n"
+        "assert romano_a_entero('MCMXCIV') == 1994\nassert romano_a_entero('MMXXVI') == 2026\nassert romano_a_entero('CDXLIV') == 444",
+        "def romano_a_entero(texto):\n    valores = {'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000}\n    total = 0\n"
+        "    for i, c in enumerate(texto):\n        v = valores[c]\n        if i + 1 < len(texto) and v < valores[texto[i + 1]]:\n"
+        "            total -= v\n        else:\n            total += v\n    return total",
+    ),
+    Tarea(
+        "agrupar_anagramas",
+        "Agrupa palabras que son anagramas entre sí, ignorando mayúsculas. Devuelve una lista de grupos; cada grupo conserva el orden de aparición y los grupos van por orden de primera aparición.",
+        "agrupar_anagramas(palabras)",
+        "assert agrupar_anagramas(['roma', 'amor', 'casa']) == [['roma', 'amor'], ['casa']]",
+        "assert agrupar_anagramas([]) == []\nassert agrupar_anagramas(['a']) == [['a']]\n"
+        "assert agrupar_anagramas(['Roma', 'amor', 'mora', 'casa', 'saca']) == [['Roma', 'amor', 'mora'], ['casa', 'saca']]",
+        "def agrupar_anagramas(palabras):\n    grupos = {}\n    for p in palabras:\n"
+        "        grupos.setdefault(''.join(sorted(p.lower())), []).append(p)\n    return list(grupos.values())",
+    ),
+    Tarea(
+        "aplanar",
+        "Aplana una lista con listas anidadas a cualquier profundidad en una lista simple, conservando el orden. Las cadenas no se separan.",
+        "aplanar(lista)",
+        "assert aplanar([1, [2, [3]]]) == [1, 2, 3]",
+        "assert aplanar([]) == []\nassert aplanar([[[]]]) == []\nassert aplanar(['ab', ['cd']]) == ['ab', 'cd']\n"
+        "assert aplanar([1, [2, [3, [4, [5]]]], 6]) == [1, 2, 3, 4, 5, 6]",
+        "def aplanar(lista):\n    resultado = []\n    for x in lista:\n        if isinstance(x, list):\n"
+        "            resultado.extend(aplanar(x))\n        else:\n            resultado.append(x)\n    return resultado",
+    ),
+    Tarea(
+        "palabras_frecuentes",
+        "Devuelve las n palabras más frecuentes de un texto, en minúscula e ignorando signos de puntuación; en caso de empate, por orden alfabético.",
+        "palabras_frecuentes(texto, n)",
+        "assert palabras_frecuentes('a b a c b a', 2) == ['a', 'b']",
+        "assert palabras_frecuentes('', 3) == []\nassert palabras_frecuentes('Hola, hola! mundo', 1) == ['hola']\n"
+        "assert palabras_frecuentes('b a c', 2) == ['a', 'b']\nassert palabras_frecuentes('a b', 5) == ['a', 'b']\n"
+        "assert palabras_frecuentes('x x y y z', 2) == ['x', 'y']",
+        "import re\nfrom collections import Counter\n\n\ndef palabras_frecuentes(texto, n):\n"
+        "    cuenta = Counter(re.findall(r'\\w+', texto.lower()))\n"
+        "    return [p for p, _ in sorted(cuenta.items(), key=lambda kv: (-kv[1], kv[0]))[:n]]",
+    ),
+    Tarea(
+        "fusionar_intervalos",
+        "Fusiona intervalos [inicio, fin] que se solapan o se tocan y devuelve la lista ordenada de intervalos resultantes como listas. No debe modificar la entrada.",
+        "fusionar_intervalos(intervalos)",
+        "assert fusionar_intervalos([[1, 3], [2, 6], [8, 10]]) == [[1, 6], [8, 10]]",
+        "assert fusionar_intervalos([]) == []\nassert fusionar_intervalos([[1, 4], [4, 5]]) == [[1, 5]]\n"
+        "assert fusionar_intervalos([[5, 6], [1, 2]]) == [[1, 2], [5, 6]]\nassert fusionar_intervalos([[1, 10], [2, 3]]) == [[1, 10]]\n"
+        "assert fusionar_intervalos([[1, 2], [3, 4]]) == [[1, 2], [3, 4]]\nx = [[3, 4], [1, 2]]\nfusionar_intervalos(x)\nassert x == [[3, 4], [1, 2]]",
+        "def fusionar_intervalos(intervalos):\n    resultado = []\n    for ini, fin in sorted(intervalos):\n"
+        "        if resultado and ini <= resultado[-1][1]:\n            resultado[-1][1] = max(resultado[-1][1], fin)\n"
+        "        else:\n            resultado.append([ini, fin])\n    return resultado",
+    ),
+    Tarea(
+        "cesar",
+        "Cifra un texto con César desplazando k letras del alfabeto inglés (k puede ser negativo o mayor que 26); conserva las mayúsculas y deja intactos los demás caracteres.",
+        "cesar(texto, k)",
+        "assert cesar('abc', 1) == 'bcd'",
+        "assert cesar('xyz', 3) == 'abc'\nassert cesar('Hola, Mundo!', 3) == 'Krod, Pxqgr!'\nassert cesar('abc', -1) == 'zab'\n"
+        "assert cesar('abc', 27) == 'bcd'\nassert cesar('ñandú', 1) == 'ñboeú'",
+        "def cesar(texto, k):\n    salida = []\n    for c in texto:\n        if 'a' <= c <= 'z':\n"
+        "            salida.append(chr((ord(c) - 97 + k) % 26 + 97))\n        elif 'A' <= c <= 'Z':\n"
+        "            salida.append(chr((ord(c) - 65 + k) % 26 + 65))\n        else:\n            salida.append(c)\n    return ''.join(salida)",
+    ),
+    Tarea(
+        "maximo_subarreglo",
+        "Devuelve la mayor suma de un tramo contiguo no vacío de una lista de enteros; devuelve 0 si la lista está vacía.",
+        "maximo_subarreglo(numeros)",
+        "assert maximo_subarreglo([-2, 1, -3, 4, -1, 2, 1, -5, 4]) == 6",
+        "assert maximo_subarreglo([]) == 0\nassert maximo_subarreglo([-3, -1, -2]) == -1\nassert maximo_subarreglo([5]) == 5\n"
+        "assert maximo_subarreglo([1, 2, 3]) == 6\nassert maximo_subarreglo([2, -1, 2]) == 3",
+        "def maximo_subarreglo(numeros):\n    if not numeros:\n        return 0\n    mejor = actual = numeros[0]\n"
+        "    for x in numeros[1:]:\n        actual = max(x, actual + x)\n        mejor = max(mejor, actual)\n    return mejor",
+    ),
+)
+
 
 class BancoTareas:
     def __init__(self, tareas: tuple[Tarea, ...] | None = None, verificador: Verificador | None = None):
-        tareas = TAREAS_BASE + TAREAS_EXTRA if tareas is None else tareas
+        tareas = TAREAS_BASE + TAREAS_EXTRA + TAREAS_DIFICILES if tareas is None else tareas
         self._tareas = {t.id: t for t in tareas}
         self._verificador = verificador or Verificador()
 
