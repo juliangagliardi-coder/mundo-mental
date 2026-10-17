@@ -54,9 +54,67 @@ TAREAS_BASE = (
     ),
 )
 
+TAREAS_EXTRA = (
+    Tarea(
+        "maximo_lista", "Devuelve el mayor número de una lista de enteros, o None si la lista está vacía.",
+        "maximo_lista(numeros)",
+        "assert maximo_lista([3, 9, 2]) == 9",
+        "assert maximo_lista([]) is None\nassert maximo_lista([-5, -2, -9]) == -2\nassert maximo_lista([7]) == 7",
+        "def maximo_lista(numeros):\n    return max(numeros) if numeros else None",
+    ),
+    Tarea(
+        "contar_palabras", "Cuenta las palabras de un texto separadas por uno o más espacios.",
+        "contar_palabras(texto)",
+        "assert contar_palabras('uno dos tres') == 3",
+        "assert contar_palabras('') == 0\nassert contar_palabras('  a   b ') == 2\nassert contar_palabras('   ') == 0",
+        "def contar_palabras(texto):\n    return len(texto.split())",
+    ),
+    Tarea(
+        "es_primo", "Indica si un entero es primo. Los menores que 2 no lo son.", "es_primo(n)",
+        "assert es_primo(7)\nassert not es_primo(8)",
+        "assert not es_primo(0)\nassert not es_primo(1)\nassert not es_primo(-3)\nassert es_primo(2)\n"
+        "assert es_primo(97)\nassert not es_primo(91)",
+        "def es_primo(n):\n    if n < 2:\n        return False\n    i = 2\n    while i * i <= n:\n        if n % i == 0:\n            return False\n        i += 1\n    return True",
+    ),
+    Tarea(
+        "quitar_duplicados",
+        "Devuelve una lista sin elementos repetidos, conservando el orden de la primera aparición.",
+        "quitar_duplicados(lista)",
+        "assert quitar_duplicados([1, 2, 1, 3, 2]) == [1, 2, 3]",
+        "assert quitar_duplicados([]) == []\nassert quitar_duplicados(['a', 'b', 'a']) == ['a', 'b']\n"
+        "assert quitar_duplicados([3, 3, 3]) == [3]",
+        "def quitar_duplicados(lista):\n    vistos = set()\n    resultado = []\n    for x in lista:\n        if x not in vistos:\n            vistos.add(x)\n            resultado.append(x)\n    return resultado",
+    ),
+    Tarea(
+        "factorial", "Devuelve el factorial de un entero n >= 0, con factorial(0) = 1.", "factorial(n)",
+        "assert factorial(5) == 120",
+        "assert factorial(0) == 1\nassert factorial(1) == 1\nassert factorial(10) == 3628800",
+        "def factorial(n):\n    resultado = 1\n    for i in range(2, n + 1):\n        resultado *= i\n    return resultado",
+    ),
+    Tarea(
+        "mayusculas_iniciales",
+        "Pone en mayúscula la primera letra de cada palabra y en minúscula el resto, separando por un espacio.",
+        "mayusculas_iniciales(texto)",
+        "assert mayusculas_iniciales('hola mundo') == 'Hola Mundo'",
+        "assert mayusculas_iniciales('') == ''\nassert mayusculas_iniciales('hOLA   mUNDO') == 'Hola Mundo'\n"
+        "assert mayusculas_iniciales('ñandú rojo') == 'Ñandú Rojo'",
+        "def mayusculas_iniciales(texto):\n    return ' '.join(p.capitalize() for p in texto.split())",
+    ),
+    Tarea(
+        "rotar_lista",
+        "Rota una lista k posiciones hacia la derecha; k puede ser mayor que la longitud o negativo.",
+        "rotar_lista(lista, k)",
+        "assert rotar_lista([1, 2, 3, 4], 1) == [4, 1, 2, 3]",
+        "assert rotar_lista([], 3) == []\nassert rotar_lista([1, 2, 3], 4) == [3, 1, 2]\n"
+        "assert rotar_lista([1, 2, 3], -1) == [2, 3, 1]\nassert rotar_lista([1, 2, 3], 0) == [1, 2, 3]",
+        "def rotar_lista(lista, k):\n    if not lista:\n        return []\n    k %= len(lista)\n    if k == 0:\n        return list(lista)\n    return lista[-k:] + lista[:-k]",
+    ),
+)
+
 
 class BancoTareas:
-    def __init__(self, tareas: tuple[Tarea, ...] = TAREAS_BASE, verificador: Verificador | None = None):
+    def __init__(self, tareas: tuple[Tarea, ...] | None = None, verificador: Verificador | None = None):
+        tareas = TAREAS_BASE + TAREAS_EXTRA if tareas is None else tareas
         self._tareas = {t.id: t for t in tareas}
         self._verificador = verificador or Verificador()
 
