@@ -2,7 +2,8 @@
 
 Con una Autoridad, las candidatas listas se adoptan solas: se compara el banco antes y después,
 se aplica con reversa y se registra. Sin Autoridad, el ciclo solo propone (comportamiento anterior).
-Si se le da un Libro, cada solución adoptada se guarda también como ficha verificada.
+Cada solución adoptada se guarda también como ficha verificada en el Libro (el que se pase o, con
+Autoridad, el libro.jsonl que vive junto al registro de ciclos).
 """
 
 from __future__ import annotations
@@ -50,6 +51,8 @@ class CicloTierra:
         self.banco = banco
         self.ruta_registro = Path(ruta_registro)
         self.autoridad = autoridad
+        if libro is None and autoridad is not None:
+            libro = Libro(self.ruta_registro.with_name("libro.jsonl"), Verificador())
         self.libro = libro
         self.ruta_adoptadas = Path(ruta_adoptadas) if ruta_adoptadas else self.ruta_registro.with_name("adoptadas.json")
 
