@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -40,12 +42,17 @@ class BibliotecaSQLite:
         self._crear_esquema()
         self._sincronizar_catalogo()
 
-    def _conexion(self) -> sqlite3.Connection:
+    @contextmanager
+    def _conexion(self) -> Iterator[sqlite3.Connection]:
         conexion = sqlite3.connect(self.db, timeout=30)
-        conexion.row_factory = sqlite3.Row
-        conexion.execute("PRAGMA journal_mode=WAL")
-        conexion.execute("PRAGMA foreign_keys=ON")
-        return conexion
+        try:
+            conexion.row_factory = sqlite3.Row
+            conexion.execute("PRAGMA journal_mode=WAL")
+            conexion.execute("PRAGMA foreign_keys=ON")
+            with conexion:
+                yield conexion
+        finally:
+            conexion.close()
 
     def _crear_esquema(self) -> None:
         with self._conexion() as conexion:

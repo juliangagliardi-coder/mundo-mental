@@ -3,9 +3,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from mundo_mental.autoridad import Autoridad
 from mundo_mental.banco_tareas import BancoTareas, TAREAS_BASE
 from mundo_mental.ciclo_tierra import CicloTierra, construir_tierra
 from mundo_mental.libro import Ficha, Libro, tokenizar
+from mundo_mental.observacion import BuzonAlarmas, Centinela, Guardian
 from mundo_mental.rol_internalizadora import RolInternalizadora
 from mundo_mental.rol_lectora import RolLectora
 from mundo_mental.rol_programadora import RolProgramadora, extraer_codigo
@@ -209,7 +211,7 @@ class TestProgramadora(Base):
                                 "assert es_palindromo('aba')", "propio", "CC0", "verificado"))
         r = self.rol().ejecutar({"tarea_id": "es_palindromo"})
         self.assertEqual((r["estado"], r["origen"], r["candidata_lista"]), ("resuelta", "libro", True))
-        self.assertEqual(r["adopcion"], "requiere_aprobacion_humana")
+        self.assertEqual(r["adopcion"], "pendiente_de_autoridad")
 
     def test_reintenta_con_el_error(self):
         guion = Guion(bloque("def es_palindromo(t):\n    return False"), bloque(REF["es_palindromo"]))
@@ -221,6 +223,7 @@ class TestProgramadora(Base):
     def test_solucion_que_no_generaliza_es_parcial(self):
         r = self.rol(Guion(bloque("def suma_pares(numeros):\n    return 6"))).ejecutar({"tarea_id": "suma_pares"})
         self.assertEqual((r["estado"], r["candidata_lista"]), ("parcial", False))
+        self.assertEqual(r["adopcion"], "descartada")
         self.assertEqual(self.libro.fracasos()[-1]["motivo"], "no_generaliza")
 
     def test_tarea_desconocida(self):
@@ -264,6 +267,53 @@ class TestCiclo(Base):
         nucleo, _ = construir_tierra(self.raiz / "mente", libro, banco)
         with self.assertRaises(ValueError):
             CicloTierra(nucleo, banco, "tests/registro.jsonl")
+
+
+class TestAdopcionAutonoma(Base):
+    CONCEPTOS = {"a": {"fiabilidad": 0.2, "ejemplos_unicos": 5}, "c": {"fiabilidad": 0.9, "ejemplos_unicos": 1}}
+
+    def autoridad(self):
+        centinela = Centinela(BuzonAlarmas(self.raiz / "alarmas.jsonl"))
+        return Autoridad(self.raiz / "mente", centinela, Guardian(self.raiz / "mente"))
+
+    def ciclo(self, *respuestas):
+        libro = Libro(self.raiz / "libro.jsonl")
+        banco = BancoTareas()
+        nucleo, _ = construir_tierra(self.raiz / "mente", libro, banco, Guion(*respuestas))
+        return CicloTierra(nucleo, banco, self.raiz / "registro.jsonl", self.autoridad())
+
+    def test_adopta_sola_y_no_repite_trabajo(self):
+        ciclo = self.ciclo("resumen", bloque(REF["es_palindromo"]), bloque(REF["suma_pares"]), "otro resumen")
+        informe = ciclo.ejecutar(self.CONCEPTOS, ["es_palindromo", "suma_pares"], 100)
+        self.assertEqual([t["adopcion"] for t in informe["tareas"]], ["adoptada", "adoptada"])
+        guardadas = json.loads((self.raiz / "adoptadas.json").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(guardadas), ["es_palindromo", "suma_pares"])
+        segundo = ciclo.ejecutar(self.CONCEPTOS, ["es_palindromo", "suma_pares"], 100)
+        self.assertEqual(sorted(segundo["omitidas"]), ["es_palindromo", "suma_pares"])
+        self.assertEqual(segundo["tareas"], [])
+
+    def test_sin_mejora_no_se_adopta(self):
+        ciclo = self.ciclo()
+        primera = ciclo._adoptar("fibonacci", REF["fibonacci"])
+        self.assertEqual(primera["adopcion"], "adoptada")
+        repetida = ciclo._adoptar("fibonacci", REF["fibonacci"])
+        self.assertEqual((repetida["adopcion"], repetida["motivo"]), ("rechazada", "sin_mejora"))
+
+    def test_fallo_al_aplicar_se_revierte(self):
+        ciclo = self.ciclo()
+        original = ciclo._guardar_adoptadas
+        llamadas = []
+
+        def inestable(datos):
+            llamadas.append(1)
+            if len(llamadas) == 1:
+                raise OSError("disco")
+            original(datos)
+
+        ciclo._guardar_adoptadas = inestable
+        r = ciclo._adoptar("fibonacci", REF["fibonacci"])
+        self.assertEqual(r["adopcion"], "revertida")
+        self.assertEqual(ciclo._cargar_adoptadas(), {})
 
 
 if __name__ == "__main__":

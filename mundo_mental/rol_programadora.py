@@ -1,4 +1,7 @@
-"""Rol programadora: reutiliza el Libro, consulta al razonador y verifica; nunca se aprueba a sí misma."""
+"""Rol programadora: reutiliza el Libro, consulta al razonador y verifica; nunca se adopta a sí misma.
+
+La adopción la decide el ciclo mediante Autoridad (comparación en el banco, reversa y registro).
+"""
 
 from __future__ import annotations
 
@@ -49,7 +52,8 @@ class RolProgramadora:
                                           {"origen": origen, "motivo": ocultas.motivo})
         return {"estado": "resuelta" if ocultas.ok else "parcial", "tarea_id": tarea.id, "codigo": codigo,
                 "origen": origen, "intentos": historial, "fuentes": fuentes,
-                "candidata_lista": ocultas.ok, "adopcion": "requiere_aprobacion_humana"}
+                "candidata_lista": ocultas.ok,
+                "adopcion": "pendiente_de_autoridad" if ocultas.ok else "descartada"}
 
     def ejecutar(self, entrada: dict[str, Any]) -> dict[str, Any]:
         tarea = self._banco.obtener(str(entrada["tarea_id"]))
@@ -79,4 +83,4 @@ class RolProgramadora:
         self._libro.registrar_fracaso(f"programar:{tarea.id}", "sin_solucion", {"intentos": len(historial)})
         return {"estado": "fallida", "tarea_id": tarea.id, "codigo": "", "origen": None,
                 "intentos": historial, "fuentes": fuentes, "candidata_lista": False,
-                "adopcion": "requiere_aprobacion_humana"}
+                "adopcion": "descartada"}

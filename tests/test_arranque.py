@@ -3,11 +3,15 @@ import unittest
 from pathlib import Path
 
 from mundo_mental.aspecto import Aspecto, IdentidadAspecto
-from mundo_mental.arranque import ReflexionTierra, construir_mundo, construir_razonadores
+from mundo_mental.arranque import (RazonadorLimitado, ReflexionTierra, construir_mundo,
+                                   construir_razonadores)
+from mundo_mental.banco_tareas import BancoTareas, TAREAS_BASE
 from mundo_mental.mente_aspecto import conectar_mentes
 from mundo_mental.sistema_nervioso import Impulso, SistemaNervioso
 from mundo_mental.tejido import TejidoMental
 from mundo_mental.tierra import RazonadorNulo
+
+REF = {t.id: t.referencia for t in TAREAS_BASE}
 
 
 class Falso:
@@ -18,6 +22,15 @@ class Falso:
     def responder(self, instruccion, contexto=""):
         self.llamadas += 1
         return self.respuesta
+
+
+class Programador:
+    """Razonador de prueba: devuelve la referencia de la tarea cuando el contexto es un id del banco."""
+
+    def responder(self, instruccion, contexto=""):
+        if contexto in REF:
+            return "```python\n" + REF[contexto] + "\n```"
+        return "resumen"
 
 
 def identidad(nombre):
@@ -41,6 +54,20 @@ class TestRazonadores(unittest.TestCase):
         self.assertEqual(decisiones.config.max_tokens, 8)
         self.assertGreater(general.config.max_tokens, decisiones.config.max_tokens)
         self.assertGreater(decisiones.max_llamadas, 1000)
+
+
+class TestTope(unittest.TestCase):
+    def test_limita_llamadas_por_hora(self):
+        t = [0.0]
+        r = RazonadorLimitado(Falso("ok"), 2, reloj=lambda: t[0])
+        self.assertEqual([r.responder("x"), r.responder("x"), r.responder("x")], ["ok", "ok", ""])
+        self.assertEqual(r.denegadas, 1)
+        t[0] = 3601.0
+        self.assertEqual(r.responder("x"), "ok")
+
+    def test_rechaza_tope_negativo(self):
+        with self.assertRaises(ValueError):
+            RazonadorLimitado(Falso(), -1)
 
 
 class TestMundo(unittest.TestCase):
@@ -79,6 +106,33 @@ class TestMundo(unittest.TestCase):
         mundo, _ = self.crear()
         mundo.motor.pausar("prueba")
         self.assertEqual(mundo.vida.vivir(max_latidos=10), 0)
+
+    def test_sin_trabajo_por_defecto(self):
+        mundo, _ = self.crear()
+        self.assertIsNone(mundo.trabajo)
+        self.assertIsNone(mundo.autoridad)
+
+
+class TestMundoConTrabajo(unittest.TestCase):
+    def test_el_mundo_adopta_solo_lo_que_mejora(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        mundo = construir_mundo(tmp.name, Programador(), RazonadorNulo(), pausa=0, dormir=lambda s: None,
+                                cada_latidos=1, trabajo=True)
+        mundo.vida.vivir(max_latidos=12)
+        self.assertGreaterEqual(mundo.vida.ciclos, 1)
+        self.assertEqual(mundo.vida.fallos_ciclo, 0)
+        self.assertGreaterEqual(mundo.reflexion.emitidos, 1)
+        self.assertEqual(set(mundo.trabajo._cargar_adoptadas()), set(BancoTareas().ids()))
+
+    def test_el_tope_horario_frena_al_modelo(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        mundo = construir_mundo(tmp.name, Programador(), RazonadorNulo(), pausa=0, dormir=lambda s: None,
+                                cada_latidos=1, trabajo=True, tope_hora=0, reloj=lambda: 0.0)
+        mundo.vida.vivir(max_latidos=12)
+        self.assertGreaterEqual(mundo.limitador.denegadas, 1)
+        self.assertEqual(mundo.trabajo._cargar_adoptadas(), {})
 
 
 class TestSuscripciones(unittest.TestCase):
