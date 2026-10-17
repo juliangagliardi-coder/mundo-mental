@@ -2,6 +2,8 @@
 
 Con una Autoridad, las candidatas listas se adoptan solas: se compara el banco antes y después,
 se aplica con reversa y se registra. Sin Autoridad, el ciclo solo propone (comportamiento anterior).
+Cada solución adoptada se guarda también como ficha verificada en el Libro (el que se pase o, con
+Autoridad, el libro.jsonl que vive junto al registro de ciclos).
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from typing import Any
 from .autoridad import Autoridad
 from .banco_tareas import BancoTareas
 from .curiosidad import Curiosidad
-from .libro import Libro
+from .libro import Ficha, Libro
 from .rol_internalizadora import RolInternalizadora
 from .rol_lectora import RolLectora
 from .rol_programadora import RolProgramadora
@@ -40,7 +42,8 @@ class CicloTierra:
     ZONA_ADOPCIONES = "adopciones"
 
     def __init__(self, nucleo: NucleoTierra, banco: BancoTareas, ruta_registro: str | Path,
-                 autoridad: Autoridad | None = None, ruta_adoptadas: str | Path | None = None):
+                 autoridad: Autoridad | None = None, ruta_adoptadas: str | Path | None = None,
+                 libro: Libro | None = None):
         for ruta in (ruta_registro, ruta_adoptadas):
             if ruta is not None and not Path(ruta).is_absolute() and ruta_protegida(str(ruta)):
                 raise ValueError("El ciclo no puede escribir en una ruta protegida")
@@ -48,6 +51,9 @@ class CicloTierra:
         self.banco = banco
         self.ruta_registro = Path(ruta_registro)
         self.autoridad = autoridad
+        if libro is None and autoridad is not None:
+            libro = Libro(self.ruta_registro.with_name("libro.jsonl"), Verificador())
+        self.libro = libro
         self.ruta_adoptadas = Path(ruta_adoptadas) if ruta_adoptadas else self.ruta_registro.with_name("adoptadas.json")
 
     def _cargar_adoptadas(self) -> dict[str, str]:
@@ -67,6 +73,22 @@ class CicloTierra:
         temporal.write_text(json.dumps(adoptadas, ensure_ascii=False, indent=2), encoding="utf-8")
         temporal.replace(self.ruta_adoptadas)
 
+    def _registrar_ficha(self, tarea_id: str, codigo: str) -> str | None:
+        """Guarda la solución adoptada como ficha verificada. Nunca rompe la adopción."""
+        if self.libro is None:
+            return None
+        try:
+            tarea = self.banco.obtener(tarea_id)
+            ficha = self.libro.anadir(Ficha(
+                titulo=tarea.funcion, tema="soluciones_adoptadas", texto=tarea.enunciado, ejemplo=codigo,
+                prueba=f"{tarea.visibles}\n{tarea.ocultas}", procedencia=f"tierra:adoptada:{tarea_id}",
+                licencia="propia", estado="verificado"))
+            return ficha.id
+        except Exception as error:
+            self.nucleo.aspecto.narrar("ficha_fallida", f"No pude guardar la ficha de {tarea_id}",
+                                       error=str(error)[:200])
+            return None
+
     def _adoptar(self, tarea_id: str, codigo: str) -> dict[str, Any]:
         adoptadas = self._cargar_adoptadas()
         antes = self.banco.evaluar(adoptadas)
@@ -85,9 +107,14 @@ class CicloTierra:
         decision = self.autoridad.actuar("programadora", self.ZONA_ADOPCIONES, f"adoptar:{tarea_id}",
                                          ejecutar, deshacer)
         resultado = decision["resultado"]
-        return {"adopcion": "adoptada" if resultado == "ejecutada" else resultado,
-                "motivo": "mejora_sin_regresiones" if resultado == "ejecutada" else resultado,
-                "regresiones": []}
+        salida = {"adopcion": "adoptada" if resultado == "ejecutada" else resultado,
+                  "motivo": "mejora_sin_regresiones" if resultado == "ejecutada" else resultado,
+                  "regresiones": []}
+        if resultado == "ejecutada":
+            ficha_id = self._registrar_ficha(tarea_id, codigo)
+            if ficha_id:
+                salida["ficha"] = ficha_id
+        return salida
 
     def ejecutar(self, conceptos: dict[str, dict[str, Any]], tareas: list[str], presupuesto: int = 100) -> dict[str, Any]:
         if presupuesto < 0:
